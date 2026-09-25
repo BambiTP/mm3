@@ -11,7 +11,7 @@ input → buttons, 60 Hz fixed-timestep ticking, drawing, audio, file I/O.
 | Windows | SDL2 | ✅ builds in CI | MSVC, SDL2 statically linked |
 | macOS | SDL2 | ✅ builds in CI | Apple Silicon + Intel; notarization needed to distribute |
 | Linux | SDL2 | ✅ builds in CI | Also covers Steam Deck |
-| Web browsers | SDL2 via Emscripten | ✅ builds in CI | WebAssembly + WebGL; hosted on Cloudflare Pages |
+| Web browsers | SDL2 via Emscripten | ✅ builds in CI | WebAssembly + WebGL; hosted on GitHub Pages |
 | Android | SDL2 | planned | SDL2 Android project template + touch controls overlay |
 | iOS / iPadOS | SDL2 | planned | Needs a Mac + Apple developer account to build/sign |
 | Nintendo Switch / PlayStation / Xbox | custom frontend on console SDK | future | Requires becoming a licensed developer (NDA SDKs; code can't be public) |

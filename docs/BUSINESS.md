@@ -5,8 +5,14 @@ legal or tax advice.
 
 ## Keep the code private
 
-- The GitHub repository must be **private** (Settings → General → Danger Zone
-  → Change visibility). Anything pushed while public may already be copied.
+- **Current status: the repository is public** (so GitHub Pages is free and no
+  signup is needed for testing). Anyone can read and copy the code; the
+  "All rights reserved" license still makes copying illegal, but it's hard to
+  enforce.
+- Before adding anything valuable (real art, music, the level-sharing server,
+  a store build), make the repo **private** (Settings → General → Danger Zone
+  → Change visibility) and move browser hosting to a service that works with
+  private repos (Cloudflare Pages, Netlify, itch.io, or a paid GitHub plan).
 - `LICENSE` is "All rights reserved": nobody may use the code without your
   written permission.
 - Only add collaborators you trust; have contractors sign an agreement that
