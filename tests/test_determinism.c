@@ -16,11 +16,12 @@
 #define RUN_FRAMES 3600 /* one minute of gameplay per style */
 
 static const uint32_t k_golden[MM3_STYLE_COUNT] = {
-    0x99F318DBu, /* Classic */
-    0xD8A583FBu, /* New     */
-    0x474E46C1u, /* World   */
-    0x95F72361u, /* Wonder  */
-    0x74476224u  /* Custom  */
+    0xFD1A9A22u, /* Retro    */
+    0x997A77ECu, /* Island   */
+    0x2A911B10u, /* Modern   */
+    0x87B700C2u, /* Athletic */
+    0x1B6E24E6u, /* Bloom    */
+    0xBDF441EBu  /* Custom   */
 };
 
 /* Deterministic "bot" input: holds a random button combo for 8-40 frames. */
@@ -33,6 +34,7 @@ static mm3_buttons scripted_input(mm3_rng *r, uint32_t frame, mm3_buttons *held,
         else if (roll < 80) b |= MM3_BTN_LEFT;
         if (mm3_rng_range(r, 2)) b |= MM3_BTN_RUN;
         if (mm3_rng_range(r, 3) == 0) b |= MM3_BTN_JUMP;
+        if (mm3_rng_range(r, 8) == 0) b |= MM3_BTN_UP;
         if (mm3_rng_range(r, 10) == 0) b |= MM3_BTN_DOWN;
         if (mm3_rng_range(r, 12) == 0) b |= MM3_BTN_SPIN;
         *held = b;
@@ -42,6 +44,8 @@ static mm3_buttons scripted_input(mm3_rng *r, uint32_t frame, mm3_buttons *held,
     if ((*held & MM3_BTN_JUMP) && (frame % 24) >= 18) return (mm3_buttons)(*held & ~MM3_BTN_JUMP);
     return *held;
 }
+
+static int g_stuck_frames;
 
 static uint32_t run(mm3_style style, mm3_game_state *out, int save_at)
 {
@@ -60,6 +64,7 @@ static uint32_t run(mm3_style style, mm3_game_state *out, int save_at)
             memcpy(&s, &saved, sizeof(s)); /* round-trip through the save */
         }
         mm3_tick(&s, scripted_input(&input_rng, f, &held, &until));
+        if (mm3_player_stuck(&s)) g_stuck_frames++;
     }
     if (out) memcpy(out, &s, sizeof(s));
     return mm3_state_hash(&s);
@@ -85,6 +90,11 @@ int main(int argc, char **argv)
         if (a != b) { printf("FAIL %s: rerun hash %08X != %08X\n", mm3_style_name((mm3_style)st), (unsigned)a, (unsigned)b); failures++; }
         if (a != c) { printf("FAIL %s: save-state hash %08X != %08X\n", mm3_style_name((mm3_style)st), (unsigned)a, (unsigned)c); failures++; }
         if (a != k_golden[st]) { printf("FAIL %s: golden hash %08X != expected %08X\n", mm3_style_name((mm3_style)st), (unsigned)a, (unsigned)k_golden[st]); failures++; }
+        if (g_stuck_frames) {
+            printf("FAIL %s: player inside a wall for %d frames\n", mm3_style_name((mm3_style)st), g_stuck_frames);
+            failures++;
+            g_stuck_frames = 0;
+        }
         if (end.player.x == end.player.spawn_x && end.player.y == end.player.spawn_y) {
             printf("FAIL %s: player never moved\n", mm3_style_name((mm3_style)st));
             failures++;

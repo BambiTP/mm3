@@ -9,7 +9,7 @@ build.** That is what makes replays, speedrun verification, level
 
 | Do | Don't |
 |---|---|
-| Use integers; positions/speeds in subpixels (256 per pixel) | Use `float` or `double` — results differ between CPUs, compilers and optimization levels |
+| Use integers; positions/speeds in 1/4096 px | Use `float` or `double` — results differ between CPUs, compilers and optimization levels |
 | Use `mm3_floor_div`, `mm3_fx_to_px` | Right-shift negative numbers (`>>` on negatives is implementation-defined) |
 | Keep values well inside `int32_t` | Rely on signed overflow (undefined behavior) |
 | Draw random numbers from `state->rng` | Call `rand()`, `time()`, or read any clock |

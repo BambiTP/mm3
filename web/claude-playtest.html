@@ -80,25 +80,38 @@
       <dl>
         <dt><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd></dt><dd>Move</dd>
         <dt><kbd>Z</kbd> / <kbd>Space</kbd></dt><dd>Jump (hold for higher)</dd>
-        <dt><kbd>X</kbd> / <kbd>Shift</kbd></dt><dd>Run</dd>
-        <dt><kbd>↓</kbd></dt><dd>Ground pound in the air · long jump while running (World)</dd>
-        <dt><kbd>C</kbd></dt><dd>Spin jump (New)</dd>
-        <dt><kbd>R</kbd></dt><dd>Restart</dd>
+        <dt><kbd>X</kbd> / <kbd>Shift</kbd></dt><dd>Run · hold near a crate to pick it up, release to throw (↑ toss up, ↓ set down)</dd>
+        <dt><kbd>C</kbd></dt><dd>Spin jump on the ground · twirl in the air</dd>
+        <dt><kbd>↓</kbd></dt><dd>Crouch / duck · ground pound in the air · crouch slide while running</dd>
+        <dt><kbd>↑</kbd></dt><dd>Grab a vine · look up</dd>
+        <dt><kbd>R</kbd></dt><dd>Restart · gamepad works too (A jump, B spin, X/Y run)</dd>
       </dl>
     </section>
     <section class="card">
       <h2>Physics style</h2>
       <ul class="styles">
-        <li><kbd>1</kbd><i class="sw" style="background:var(--classic)"></i><b>Classic</b><span>Heavy momentum, air locked</span></li>
-        <li><kbd>2</kbd><i class="sw" style="background:var(--new)"></i><b>New</b><span>Wall jump, pound, spin</span></li>
-        <li><kbd>3</kbd><i class="sw" style="background:var(--world)"></i><b>World</b><span>Tight, long jump, dash</span></li>
-        <li><kbd>4</kbd><i class="sw" style="background:var(--wonder)"></i><b>Wonder</b><span>Floaty, forgiving timing</span></li>
-        <li><kbd>5</kbd><i class="sw" style="background:var(--custom)"></i><b>Custom</b><span>Your own tuning</span></li>
+        <li><kbd>1</kbd><i class="sw" style="background:var(--classic)"></i><b>Retro</b><span>8-bit rules: no air turning, swim, vines</span></li>
+        <li><kbd>2</kbd><i class="sw" style="background:var(--new)"></i><b>Island</b><span>P-meter sprint, spin jump, carry, look up</span></li>
+        <li><kbd>3</kbd><i class="sw" style="background:var(--world)"></i><b>Modern</b><span>Triple jump, wall jump, pound, twirl</span></li>
+        <li><kbd>4</kbd><i class="sw" style="background:var(--wonder)"></i><b>Athletic</b><span>Long jump, backflip, side flip, dash</span></li>
+        <li><kbd>5</kbd><i class="sw" style="background:var(--custom)"></i><b>Bloom</b><span>Floaty, forgiving, spin and twirl</span></li>
+        <li><kbd>6</kbd><i class="sw" style="background:#8a8fa0"></i><b>Custom</b><span>Every move switched on</span></li>
       </ul>
+    </section>
+    <section class="card">
+      <h2>Move recipes</h2>
+      <dl>
+        <dt>Triple jump</dt><dd>Modern: jump again right as you land, three times while running</dd>
+        <dt>Wall jump</dt><dd>Hold toward a wall while falling, then jump</dd>
+        <dt>Long jump</dt><dd>Athletic: run, hold ↓, jump</dd>
+        <dt>Backflip</dt><dd>Athletic: stand still, hold ↓, jump</dd>
+        <dt>Side flip</dt><dd>Athletic: run, press the other way, jump while skidding</dd>
+        <dt>P-speed</dt><dd>Island: hold run on a long flat stretch until the P meter fills</dd>
+      </dl>
     </section>
   </div>
 
-  <footer>Placeholder art. The player's color shows the active style; 60 ticks per second, same result on every device.</footer>
+  <footer>Placeholder art drawn in code, different for each style. 60 ticks per second; the same inputs give the same result on every device.</footer>
 </div>
 
 <script>

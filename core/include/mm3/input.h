@@ -18,8 +18,8 @@ enum {
     MM3_BTN_UP    = 1u << 2,
     MM3_BTN_DOWN  = 1u << 3,
     MM3_BTN_JUMP  = 1u << 4,
-    MM3_BTN_RUN   = 1u << 5,  /* run / dash / action */
-    MM3_BTN_SPIN  = 1u << 6,  /* spin jump (styles that support it) */
+    MM3_BTN_RUN   = 1u << 5,  /* run / dash / pick up and throw */
+    MM3_BTN_SPIN  = 1u << 6,  /* spin jump on the ground, twirl in the air */
     MM3_BTN_START = 1u << 7
 };
 

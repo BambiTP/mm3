@@ -31,7 +31,7 @@ Payload = sequence of chunks:
 |---|---|
 | `META` | title (UTF-8, length-prefixed), author id, created time (informational only; never used by the sim), theme id |
 | `PHYS` | style id (u8) + the **full physics profile by value** (every field as i32/u32 in declaration order) + profile version |
-| `TMAP` | width, height (u16 each), then tiles (u8 each), row-major; RLE-compressed |
+| `TMAP` | width, height (u16 each), then tiles (u8 each, `mm3_tile` values: empty, solid, one-way, six slope shapes, water, vine), row-major; RLE-compressed |
 | `ENTS` | entity count, then per entity: type (u16), x, y (i32 subpixels), params |
 | `RULE` | clear condition, timer, start seed |
 

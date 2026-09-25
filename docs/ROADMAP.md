@@ -9,12 +9,18 @@
 - SDL2 frontend (desktop + browser) with placeholder rectangles.
 - Auto-deploy of the browser build to GitHub Pages (one folder per branch).
 
-## Milestone 2 — feels good to play
-- Playtest and retune each style; implement crouch jump and wall climb.
+## Milestone 2 — feels good to play (in progress)
+- ✅ Researched physics: Retro and Island reproduced exactly from the source
+  games' disassemblies; Modern's jump/gravity from the NSMBW decomp.
+- ✅ Full move sets per style (triple jump, wall jump, ground pound, twirl,
+  spin jump, long jump, backflip, side flip, dash, P-meter, crouch slide).
+- ✅ Water, vines, crates (carry/throw/kick), one-way platforms, slopes.
+- ✅ Procedural placeholder sprites and tiles, different for each style.
+- ✅ Gamepad support.
+- Playtest and retune the estimated styles (Athletic, Bloom).
 - Render interpolation, camera smoothing, basic sound effects.
 - Replay recorder/player + replay-based regression tests.
 - Touch controls overlay (phones/tablets in the browser).
-- Gamepad support.
 
 ## Milestone 3 — the maker
 - Level editor: place/erase tiles, spawn/goal, undo/redo, play-test toggle.

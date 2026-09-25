@@ -1,9 +1,10 @@
 /*
  * main.c - SDL2 frontend (Windows, macOS, Linux, Web via Emscripten,
- * and later Android/iOS). Placeholder rectangles only: no art yet.
+ * and later Android/iOS). Art is procedural placeholder (see art.c).
  *
- * Controls: Arrows/WASD move, Z/Space/K jump, X/Shift/J run, C/L spin,
- *           1-5 switch physics style, R restart.
+ * Keyboard: Arrows/WASD move, Z/Space/K jump, X/Shift/J run & carry,
+ *           C/L spin, 1-6 physics style, R restart, Esc quit.
+ * Gamepad:  D-pad/stick move, A jump, B spin, X/Y run & carry.
  */
 #include <stdio.h>
 #include <SDL.h>
@@ -13,6 +14,7 @@
 
 #include "mm3/sim.h"
 #include "../platform.h"
+#include "art.h"
 
 #define VIEW_W 448
 #define VIEW_H 256
@@ -20,27 +22,30 @@
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_GameController *pad;
     mm3_game_state state;
     mm3_pacer pacer;
     Uint64 last_counter;
+    int cam_x, cam_y;
     int running;
 } app_t;
 
 static app_t g_app;
 
-static const Uint8 k_style_colors[MM3_STYLE_COUNT][3] = {
-    {220, 60, 50},  /* Classic */
-    {40, 170, 70},  /* New     */
-    {50, 110, 220}, /* World   */
-    {200, 80, 200}, /* Wonder  */
-    {240, 170, 30}  /* Custom  */
+static const char *const k_hints[MM3_STYLE_COUNT] = {
+    "Z JUMP  X RUN  DOWN CROUCH  UP VINE  (NO AIR TURN)",
+    "Z JUMP  C SPIN  X RUN/CARRY  DOWN DUCK  UP LOOK/VINE",
+    "Z JUMP X3  C SPIN/TWIRL  DOWN POUND  WALL JUMP  X CARRY",
+    "RUN+DOWN+Z LONG  DOWN+Z BACKFLIP  TURN+Z SIDEFLIP",
+    "Z JUMP  C SPIN/TWIRL  DOWN POUND  WALL JUMP  X CARRY",
+    "EVERY MOVE FROM EVERY STYLE"
 };
 
 static void update_title(app_t *a)
 {
     char title[96];
-    snprintf(title, sizeof(title), "MM3 prototype - physics: %s (1-5 to switch)",
-             mm3_style_name(a->state.style));
+    snprintf(title, sizeof(title), "MM3 prototype - %s physics (1-6 to switch)",
+             mm3_style_name((mm3_style)a->state.style));
     SDL_SetWindowTitle(a->window, title);
 }
 
@@ -51,7 +56,7 @@ static void restart(app_t *a, mm3_style style)
     update_title(a);
 }
 
-static mm3_buttons read_buttons(void)
+static mm3_buttons read_buttons(app_t *a)
 {
     const Uint8 *k = SDL_GetKeyboardState(NULL);
     mm3_buttons b = 0;
@@ -63,63 +68,149 @@ static mm3_buttons read_buttons(void)
     if (k[SDL_SCANCODE_X] || k[SDL_SCANCODE_LSHIFT] || k[SDL_SCANCODE_J]) b |= MM3_BTN_RUN;
     if (k[SDL_SCANCODE_C] || k[SDL_SCANCODE_L]) b |= MM3_BTN_SPIN;
     if (k[SDL_SCANCODE_RETURN]) b |= MM3_BTN_START;
+    if (a->pad) {
+        SDL_GameController *p = a->pad;
+        Sint16 ax = SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTX);
+        Sint16 ay = SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTY);
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || ax < -16000) b |= MM3_BTN_LEFT;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || ax > 16000) b |= MM3_BTN_RIGHT;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_UP) || ay < -16000) b |= MM3_BTN_UP;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_DOWN) || ay > 16000) b |= MM3_BTN_DOWN;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_A)) b |= MM3_BTN_JUMP;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_B)) b |= MM3_BTN_SPIN;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_X) ||
+            SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_Y)) b |= MM3_BTN_RUN;
+        if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_START)) b |= MM3_BTN_START;
+    }
     return b;
+}
+
+static void update_camera(app_t *a)
+{
+    const mm3_game_state *s = &a->state;
+    int px = mm3_fx_to_px(s->player.x) + 6, py = mm3_fx_to_px(s->player.y) + 13;
+    int map_w = s->map.width * MM3_TILE_PX, map_h = s->map.height * MM3_TILE_PX;
+    int tx = px - VIEW_W / 2, ty = py - VIEW_H / 2 - 16;
+    /* horizontal: follow tightly; vertical: ease */
+    a->cam_x = tx;
+    a->cam_y += (ty - a->cam_y) / 6;
+    if (a->cam_x > map_w - VIEW_W) a->cam_x = map_w - VIEW_W;
+    if (a->cam_x < 0) a->cam_x = 0;
+    if (a->cam_y > map_h - VIEW_H) a->cam_y = map_h - VIEW_H;
+    if (a->cam_y < 0) a->cam_y = 0;
+}
+
+static void draw_hud(app_t *a)
+{
+    SDL_Renderer *r = a->renderer;
+    const mm3_game_state *s = &a->state;
+    int i, x = 6;
+    SDL_Rect bar;
+
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    bar.x = 0; bar.y = 0; bar.w = VIEW_W; bar.h = 22;
+    SDL_SetRenderDrawColor(r, 0, 0, 0, 120);
+    SDL_RenderFillRect(r, &bar);
+    for (i = 0; i < MM3_STYLE_COUNT; i++) {
+        char label[32];
+        int active = i == s->style, w;
+        snprintf(label, sizeof(label), "%d %s", i + 1, mm3_style_name((mm3_style)i));
+        w = art_text_width(label);
+        if (active) {
+            SDL_Rect hl;
+            hl.x = x - 2; hl.y = 2; hl.w = w + 3; hl.h = 10;
+            SDL_SetRenderDrawColor(r, 255, 255, 255, 230);
+            SDL_RenderFillRect(r, &hl);
+            art_text(r, label, x, 3, 20, 20, 30);
+        } else {
+            art_text(r, label, x, 3, 220, 220, 230);
+        }
+        x += w + 8;
+    }
+    art_text(r, k_hints[s->style], 6, 13, 255, 240, 170);
+
+    /* P-meter (Island) or dash meter (styles with a dash) */
+    if (s->style == MM3_STYLE_ISLAND || (s->profile.moves & MM3_MOVE_DASH)) {
+        int filled, total = 6;
+        if (s->style == MM3_STYLE_ISLAND) filled = s->player.pmeter * total / 0x70;
+        else filled = s->profile.dash_frames ? s->player.run_timer * total / s->profile.dash_frames : 0;
+        for (i = 0; i < total; i++) {
+            SDL_Rect seg;
+            seg.x = 6 + i * 7; seg.y = VIEW_H - 12; seg.w = 5; seg.h = 6;
+            if (i < filled) SDL_SetRenderDrawColor(r, 255, 210, 60, 255);
+            else SDL_SetRenderDrawColor(r, 60, 60, 70, 200);
+            SDL_RenderFillRect(r, &seg);
+        }
+        art_text(r, s->style == MM3_STYLE_ISLAND ? "P" : "DASH", 6 + total * 7 + 2, VIEW_H - 13,
+                 filled >= total ? 255 : 150, filled >= total ? 220 : 150, filled >= total ? 60 : 160);
+    }
 }
 
 static void draw(app_t *a)
 {
     const mm3_game_state *s = &a->state;
     const mm3_player *pl = &s->player;
-    const Uint8 *col = k_style_colors[s->style];
     SDL_Renderer *r = a->renderer;
-    int map_w_px = s->map.width * MM3_TILE_PX;
-    int px = mm3_fx_to_px(pl->x), py = mm3_fx_to_px(pl->y);
-    int pw = mm3_fx_to_px(pl->w), ph = mm3_fx_to_px(pl->h);
-    int cam_x = px + pw / 2 - VIEW_W / 2;
-    int tx0, tx1, x, y, i;
-    SDL_Rect rc;
+    int style = s->style;
+    int tx0, tx1, ty0, ty1, x, y, i;
 
-    if (cam_x > map_w_px - VIEW_W) cam_x = map_w_px - VIEW_W;
-    if (cam_x < 0) cam_x = 0;
+    update_camera(a);
+    art_draw_background(r, style, a->cam_x, a->cam_y);
 
-    SDL_SetRenderDrawColor(r, 120, 190, 240, 255);
-    SDL_RenderClear(r);
-
-    tx0 = cam_x / MM3_TILE_PX;
-    tx1 = (cam_x + VIEW_W) / MM3_TILE_PX + 1;
+    tx0 = a->cam_x / MM3_TILE_PX;
+    tx1 = (a->cam_x + VIEW_W) / MM3_TILE_PX + 1;
+    ty0 = a->cam_y / MM3_TILE_PX;
+    ty1 = (a->cam_y + VIEW_H) / MM3_TILE_PX + 1;
     if (tx1 > s->map.width) tx1 = s->map.width;
-    for (y = 0; y < s->map.height; y++) {
+    if (ty1 > s->map.height) ty1 = s->map.height;
+
+    /* back layer: everything except water (water is drawn over the player) */
+    for (y = ty0; y < ty1; y++)
         for (x = tx0; x < tx1; x++) {
-            if (s->map.tiles[y][x] != MM3_TILE_SOLID) continue;
-            rc.x = x * MM3_TILE_PX - cam_x; rc.y = y * MM3_TILE_PX;
-            rc.w = rc.h = MM3_TILE_PX;
-            SDL_SetRenderDrawColor(r, 150, 95, 55, 255);
-            SDL_RenderFillRect(r, &rc);
-            SDL_SetRenderDrawColor(r, 110, 65, 35, 255);
-            SDL_RenderDrawRect(r, &rc);
+            int t = s->map.tiles[y][x];
+            int above = y > 0 ? s->map.tiles[y - 1][x] : MM3_TILE_EMPTY;
+            if (t == MM3_TILE_EMPTY || t == MM3_TILE_WATER) continue;
+            /* grass only where the top is exposed (not under a slope) */
+            art_draw_tile(r, style, t, above != MM3_TILE_SOLID &&
+                          !(above >= MM3_TILE_SLOPE_UP && above <= MM3_TILE_SLOPE_DOWN_LO),
+                          x * MM3_TILE_PX - a->cam_x, y * MM3_TILE_PX - a->cam_y);
         }
+
+    for (i = 0; i < MM3_MAX_OBJS; i++) {
+        const mm3_object *o = &s->objs[i];
+        if (o->type != MM3_OBJ_CRATE || o->state == MM3_OBJS_CARRIED) continue;
+        art_draw_crate(r, style, mm3_fx_to_px(o->x) - a->cam_x, mm3_fx_to_px(o->y) - a->cam_y);
     }
 
-    /* Player: body in style color, "eye" shows facing. */
-    rc.x = px - cam_x; rc.y = py; rc.w = pw; rc.h = ph;
-    SDL_SetRenderDrawColor(r, col[0], col[1], col[2], 255);
-    SDL_RenderFillRect(r, &rc);
-    rc.w = 3; rc.h = 3; rc.y = py + 3;
-    rc.x = (pl->flags & MM3_PF_FACING_LEFT) ? px - cam_x + 2 : px - cam_x + pw - 5;
-    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
-    SDL_RenderFillRect(r, &rc);
+    art_draw_player(r, style, pl->pose, pl->anim, pl->carry >= 0,
+                    (pl->flags & MM3_PF_FACING_LEFT) != 0,
+                    mm3_fx_to_px(pl->x) - 4 - a->cam_x,
+                    mm3_fx_to_px(pl->y + pl->h) - ART_SPRITE_H - a->cam_y);
 
-    /* HUD: one swatch per style, active one is larger. */
-    for (i = 0; i < MM3_STYLE_COUNT; i++) {
-        int active = (i == (int)s->style);
-        rc.x = 6 + i * 14; rc.y = active ? 4 : 6;
-        rc.w = rc.h = active ? 12 : 8;
-        SDL_SetRenderDrawColor(r, k_style_colors[i][0], k_style_colors[i][1],
-                               k_style_colors[i][2], 255);
-        SDL_RenderFillRect(r, &rc);
+    if (pl->carry >= 0) {
+        const mm3_object *o = &s->objs[pl->carry];
+        art_draw_crate(r, style, mm3_fx_to_px(o->x) - a->cam_x, mm3_fx_to_px(o->y) - a->cam_y);
     }
 
+    for (y = ty0; y < ty1; y++)
+        for (x = tx0; x < tx1; x++) {
+            int above = y > 0 ? s->map.tiles[y - 1][x] : MM3_TILE_EMPTY;
+            if (s->map.tiles[y][x] != MM3_TILE_WATER) continue;
+            art_draw_tile(r, style, MM3_TILE_WATER, above != MM3_TILE_WATER,
+                          x * MM3_TILE_PX - a->cam_x, y * MM3_TILE_PX - a->cam_y);
+        }
+
+    draw_hud(a);
     SDL_RenderPresent(r);
+}
+
+static void open_pad(app_t *a)
+{
+    int i;
+    if (a->pad) return;
+    for (i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i)) { a->pad = SDL_GameControllerOpen(i); if (a->pad) return; }
+    }
 }
 
 static void frame(void)
@@ -134,16 +225,24 @@ static void frame(void)
 
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) a->running = 0;
+        if (e.type == SDL_CONTROLLERDEVICEADDED) open_pad(a);
+        if (e.type == SDL_CONTROLLERDEVICEREMOVED && a->pad) {
+            SDL_GameControllerClose(a->pad);
+            a->pad = NULL;
+            open_pad(a);
+        }
         if (e.type == SDL_KEYDOWN && !e.key.repeat) {
             SDL_Keycode k = e.key.keysym.sym;
             if (k >= SDLK_1 && k < SDLK_1 + MM3_STYLE_COUNT) restart(a, (mm3_style)(k - SDLK_1));
-            if (k == SDLK_r) restart(a, a->state.style);
+            if (k == SDLK_r) restart(a, (mm3_style)a->state.style);
             if (k == SDLK_ESCAPE) a->running = 0;
         }
+        if (e.type == SDL_CONTROLLERBUTTONDOWN && e.cbutton.button == SDL_CONTROLLER_BUTTON_BACK)
+            restart(a, (mm3_style)((a->state.style + 1) % MM3_STYLE_COUNT));
     }
 
     ticks = mm3_pacer_advance(&a->pacer, elapsed_us);
-    while (ticks-- > 0) mm3_tick(&a->state, read_buttons());
+    while (ticks-- > 0) mm3_tick(&a->state, read_buttons(a));
 
     draw(a);
 
@@ -157,7 +256,7 @@ int main(int argc, char **argv)
     app_t *a = &g_app;
     (void)argc; (void)argv;
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) != 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
     }
@@ -176,10 +275,13 @@ int main(int argc, char **argv)
         fprintf(stderr, "SDL window/renderer failed: %s\n", SDL_GetError());
         return 1;
     }
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
     SDL_RenderSetLogicalSize(a->renderer, VIEW_W, VIEW_H);
     SDL_RenderSetIntegerScale(a->renderer, SDL_TRUE);
+    art_init(a->renderer);
+    open_pad(a);
 
-    restart(a, MM3_STYLE_CLASSIC);
+    restart(a, MM3_STYLE_RETRO);
     a->last_counter = SDL_GetPerformanceCounter();
     a->running = 1;
 
@@ -189,6 +291,8 @@ int main(int argc, char **argv)
     while (a->running) frame();
 #endif
 
+    art_free();
+    if (a->pad) SDL_GameControllerClose(a->pad);
     SDL_DestroyRenderer(a->renderer);
     SDL_DestroyWindow(a->window);
     SDL_Quit();

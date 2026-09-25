@@ -15,7 +15,12 @@ option(MM3_BUILD_TESTS "Build tests" ON)
 add_library(mm3_core STATIC
     core/src/rng.c
     core/src/physics_profiles.c
-    core/src/player.c
+    core/src/collide.c
+    core/src/player_common.c
+    core/src/engine_retro.c
+    core/src/engine_island.c
+    core/src/engine_modern.c
+    core/src/objects.c
     core/src/sim.c
 )
 target_include_directories(mm3_core PUBLIC core/include)
@@ -36,14 +41,20 @@ if(MM3_BUILD_TESTS)
     add_executable(test_determinism tests/test_determinism.c)
     target_link_libraries(test_determinism PRIVATE mm3_core)
     add_test(NAME determinism COMMAND test_determinism)
+    add_executable(test_moves tests/test_moves.c)
+    target_link_libraries(test_moves PRIVATE mm3_core)
+    add_test(NAME moves COMMAND test_moves)
 endif()
 
 # ---------------------------------------------------------------------------
 # SDL2 frontend
 # ---------------------------------------------------------------------------
 if(MM3_BUILD_FRONTEND)
-    add_executable(mm3 platform/sdl2/main.c)
+    add_executable(mm3 platform/sdl2/main.c platform/sdl2/art.c)
     target_link_libraries(mm3 PRIVATE mm3_core)
+    if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+        target_link_libraries(mm3 PRIVATE m)
+    endif()
 
     if(EMSCRIPTEN)
         set_target_properties(mm3 PROPERTIES OUTPUT_NAME "index" SUFFIX ".html")

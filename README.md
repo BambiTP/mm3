@@ -7,20 +7,22 @@ styles, a fully **deterministic** simulation, and a core designed to run on
 > "MM3" is a codename only. The shipping product will have its own original
 > name, characters, art and audio. See [docs/ART_AND_IP.md](docs/ART_AND_IP.md).
 
-**Status:** Milestone 1 — architecture, docs and a compilable skeleton with a
-placeholder-rectangle demo of all five physics styles.
+**Status:** Milestone 2 in progress — six physics styles with their full
+move sets (two reproduced exactly from their source games), swimming,
+climbing, carrying, slopes, and procedural placeholder art per style.
 
 ## Physics styles
 
-| Key | Style | Feel |
+| Key | Style | What it plays like |
 |---|---|---|
-| 1 | Classic | Heavy momentum, committed jumps, no air turning |
-| 2 | New | Snappier, wall jump, ground pound, spin jump |
-| 3 | World | Tight control, long jump, dash |
-| 4 | Wonder | Forgiving, floaty, generous timing windows |
-| 5 | Custom | Your own tunable style |
+| 1 | Retro | 8-bit rules, exact: heavy momentum, no mid-air turning, swim, vines |
+| 2 | Island | 16-bit rules, exact: P-meter sprint, spin jump, carry, look up |
+| 3 | Modern | HD 2D: triple jump, wall jump, ground pound, twirl |
+| 4 | Athletic | 3D-era moves in 2D: long jump, backflip, side flip, dash |
+| 5 | Bloom | Floaty and forgiving: spin, twirl, wall jump |
+| 6 | Custom | Every move from every style, tunable |
 
-Details: [docs/PHYSICS.md](docs/PHYSICS.md).
+Details, sources and accuracy of every number: [docs/PHYSICS.md](docs/PHYSICS.md).
 
 ## Testing without a dev setup
 
@@ -29,8 +31,9 @@ Windows, macOS, Linux and the browser. Follow [docs/TESTING.md](docs/TESTING.md)
 to get a link you can open in your browser
 (for example **https://bambitp.github.io/mm3/** for `main`, once Pages is enabled).
 
-Controls: arrows/WASD move · Z/Space jump · X/Shift run · Down = ground pound
-(in air) or long jump (while running, World style) · C spin · 1–5 style · R restart.
+Controls: arrows/WASD move · Z/Space jump · X/Shift run, pick up and throw ·
+C spin / twirl · Down crouch, slide, ground pound · Up vine, look up ·
+1–6 style · R restart. Gamepads work too (A jump, B spin, X/Y run).
 
 ## Building locally (optional)
 

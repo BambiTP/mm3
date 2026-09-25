@@ -9,8 +9,14 @@ to a lawyer before launch.
 - **Game mechanics and genre.** Running, jumping, wall jumps, ground pounds,
   building levels and sharing them: gameplay ideas are not protected by
   copyright.
-- **Original physics numbers** tuned by feel (which is what this project
-  does). Don't copy values extracted from another game's code/ROM.
+- **Physics numbers.** Game mechanics and plain numeric facts (a speed, a
+  gravity value) are generally not protected by copyright, so the Retro,
+  Island and Modern styles reproduce the source games' published physics
+  constants from community disassemblies (see `docs/PHYSICS.md`). Only the
+  numbers and the behavior are reproduced: no code, art, audio or text.
+  This is low risk but not zero; have a lawyer review before release. Every
+  such constant is isolated in a profile table or a clearly marked engine
+  file, so it can be swapped for tuned values if needed.
 - **Generic concepts**: blocks, coins, springs, moving platforms, enemies that
   walk back and forth, goal flags.
 
@@ -26,8 +32,9 @@ to a lawyer before launch.
   "recreations" of recognizable jingles (coin sound, power-up, level clear).
 - **Trade dress**: don't replicate specific UI layouts, logos, title-screen
   compositions or the exact look of the four official art styles. The four
-  physics styles should be named by *feel* ("Classic", "New", "World",
-  "Wonder" are internal labels — pick distinctive public names).
+  physics styles have their own public names (Retro, Island, Modern,
+  Athletic, Bloom, Custom); the source game titles appear only in code
+  comments and docs, never in the game UI or store page.
 - Marketing that says "like Mario Maker 3" or uses their screenshots.
 
 ## Asset rules for this repo
@@ -38,4 +45,6 @@ to a lawyer before launch.
   `assets/CREDITS.md` (create when the first asset arrives).
 - No AI-generated asset may be trained on or prompted to imitate Nintendo
   characters or styles; check the tool's commercial terms.
-- Placeholder art is colored rectangles until original art exists.
+- Placeholder art is drawn in code (`platform/sdl2/art.c`): a plain generic
+  hero and simple tiles, rendered differently per style. Replace with
+  commissioned original art later.
