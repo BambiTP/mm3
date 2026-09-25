@@ -7,7 +7,7 @@
   movement with 5 data-driven physics styles.
 - Golden-hash determinism tests on Linux/Windows/macOS/WebAssembly in CI.
 - SDL2 frontend (desktop + browser) with placeholder rectangles.
-- Auto-deploy of the browser build to GitHub Pages.
+- Auto-deploy of the browser build to GitHub Pages (one folder per branch).
 
 ## Milestone 2 — feels good to play
 - Playtest and retune each style; implement crouch jump and wall climb.

@@ -4,44 +4,47 @@ Every time code is pushed, GitHub Actions automatically:
 
 1. builds the game for **Windows, macOS, Linux and the browser**,
 2. runs the determinism tests on all of them,
-3. publishes the browser version from `main` to a **web link** (after the
-   one-time step in Option A).
+3. publishes the browser version to a **web link** per branch (after the
+   one-time step in Option B).
 
-## Option A — permanent link (GitHub Pages, no signup)
+## Option A — ask Claude for the play link (instant)
 
-One-time setup, about 1 minute:
+When Claude changes the game in a Claude Code session, it rebuilds the browser
+version and republishes it to a **private claude.ai page** (only you can open
+it). The link stays the same after every change, so you just **refresh** it.
+Ask "give me the play link" if you don't have it.
+
+## Option B — per-branch link on GitHub Pages (about 3 minutes after a push)
+
+One-time setup, about 1 minute (after the first push has created the
+`gh-pages` branch):
 
 1. Open the repo on GitHub → **Settings** → **Pages** (left sidebar).
-2. Under *Build and deployment* → *Source*, choose **GitHub Actions**.
+2. Under *Build and deployment* → *Source*, choose **Deploy from a branch**,
+   then branch **gh-pages**, folder **/ (root)**, and click **Save**.
 
-That's it. Every push to the `main` branch now publishes the browser version to:
+After that, every push publishes the browser version automatically:
 
-**https://bambitp.github.io/mm3/**
+- `main` → **https://bambitp.github.io/mm3/**
+- any other branch → `https://bambitp.github.io/mm3/b/<branch-name>/`, with `/`
+  in the branch name replaced by `-`. The exact link is shown on the run's
+  summary page in the *Actions* tab.
 
-Click the game once so it gets keyboard focus, then play. Branches other than
-`main` are not published here; use Option B to test those.
-
-Note: the link is public, like the repo. See `docs/BUSINESS.md` for moving to
+These links are public, like the repo. See `docs/BUSINESS.md` for moving to
 private hosting later.
 
-## Option B — instant temporary link (cloudflared quick tunnel, no signup)
+### Running your own temporary link (cloudflared, no signup)
 
-A quick tunnel gives a random `https://<words>.trycloudflare.com` link to a
-build running on some computer. The link works only while that computer keeps
-running the tunnel, and anyone who has the link can open it.
+If you have the `mm3-web` files on your PC (see Option C) and
+[cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/):
 
-- **From a Claude cloud session:** ask Claude to "give me a cloudflared link".
-  The session's network policy must allow `api.trycloudflare.com` and
-  Cloudflare's tunnel servers (`*.argotunnel.com`, port 7844). Otherwise use
-  Option A.
-- **From your own PC** (after downloading the `mm3-web` artifact, see Option C,
-  and [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)):
+```sh
+cd mm3-web
+python -m http.server 8000                       # terminal 1
+cloudflared tunnel --url http://localhost:8000   # terminal 2, prints a trycloudflare.com link
+```
 
-  ```sh
-  cd mm3-web
-  python -m http.server 8000          # terminal 1
-  cloudflared tunnel --url http://localhost:8000   # terminal 2, prints the link
-  ```
+The link works only while both commands keep running.
 
 ## Option C — download a build
 
@@ -53,7 +56,7 @@ running the tunnel, and anyone who has the link can open it.
    - macOS: right-click → *Open* the first time (unsigned app); you may need
      `chmod +x mm3` in Terminal after unzipping.
 3. `mm3-web` contains the browser files; they need a web server to run
-   (see Option B), so Option A is easier.
+   (see the cloudflared section), so Options A and B are easier.
 
 ## What "determinism tests passed" means
 

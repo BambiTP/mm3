@@ -27,7 +27,7 @@ Details: [docs/PHYSICS.md](docs/PHYSICS.md).
 You don't need to install anything. Every push is built by GitHub Actions for
 Windows, macOS, Linux and the browser. Follow [docs/TESTING.md](docs/TESTING.md)
 to get a link you can open in your browser
-(once enabled: **https://bambitp.github.io/mm3/**).
+(for example **https://bambitp.github.io/mm3/** for `main`, once Pages is enabled).
 
 Controls: arrows/WASD move · Z/Space jump · X/Shift run · Down = ground pound
 (in air) or long jump (while running, World style) · C spin · 1–5 style · R restart.

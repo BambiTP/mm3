@@ -1,0 +1,118 @@
+<!-- Page body for the private claude.ai playtest artifact (Claude publishes it with index.js + index.wasm from tools/web-build.sh). Not used by the normal web build. -->
+<title>MM3 Playtest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* Deliberately single-theme: a dark playtest bench so the sky-blue game canvas pops. */
+  :root {
+    color-scheme: dark;
+    --bench: #14161c;
+    --panel: #1d2029;
+    --line: #2d3240;
+    --ink: #e7e9ef;
+    --muted: #9aa1b3;
+    --key: #2a2f3c;
+    --classic: #dc3c32;
+    --new: #28aa46;
+    --world: #326edc;
+    --wonder: #c850c8;
+    --custom: #f0aa1e;
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--bench);
+    color: var(--ink);
+    font: 14px/1.5 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    padding-inline: 16px;
+    padding-block: 16px;
+    box-sizing: border-box;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+  h1 {
+    font: 700 26px/1.1 "Pixelify Sans", "IBM Plex Mono", monospace;
+    letter-spacing: 0.02em; margin: 0; text-wrap: balance;
+  }
+  #status { color: var(--muted); font-size: 13px; }
+  .screen {
+    background: #000; border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px; max-width: 100%; box-sizing: border-box;
+  }
+  canvas {
+    display: block; width: 100%; height: auto; aspect-ratio: 448 / 256; max-width: 100%;
+    image-rendering: pixelated; outline: none; background: #78bef0;
+  }
+  canvas:focus-visible { outline: 2px solid var(--custom); outline-offset: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  h2 {
+    font: 500 13px/1 "Pixelify Sans", monospace; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px;
+  }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
+  dt { white-space: nowrap; }
+  dd { margin: 0; color: var(--muted); }
+  kbd {
+    display: inline-block; min-width: 1.6em; text-align: center; padding: 0 5px;
+    background: var(--key); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; font: 600 12px/1.6 "IBM Plex Mono", monospace; color: var(--ink);
+  }
+  .styles { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .styles li { display: grid; grid-template-columns: auto 12px 5.5em 1fr; gap: 10px; align-items: center; }
+  .sw { width: 12px; height: 12px; border-radius: 2px; }
+  .styles span:last-child { color: var(--muted); }
+  footer { color: var(--muted); font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>MM3 Playtest</h1>
+    <span id="status">Loading the game…</span>
+  </header>
+
+  <div class="screen">
+    <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()" aria-label="Game screen. Click to give it keyboard focus."></canvas>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Controls</h2>
+      <dl>
+        <dt><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd></dt><dd>Move</dd>
+        <dt><kbd>Z</kbd> / <kbd>Space</kbd></dt><dd>Jump (hold for higher)</dd>
+        <dt><kbd>X</kbd> / <kbd>Shift</kbd></dt><dd>Run</dd>
+        <dt><kbd>↓</kbd></dt><dd>Ground pound in the air · long jump while running (World)</dd>
+        <dt><kbd>C</kbd></dt><dd>Spin jump (New)</dd>
+        <dt><kbd>R</kbd></dt><dd>Restart</dd>
+      </dl>
+    </section>
+    <section class="card">
+      <h2>Physics style</h2>
+      <ul class="styles">
+        <li><kbd>1</kbd><i class="sw" style="background:var(--classic)"></i><b>Classic</b><span>Heavy momentum, air locked</span></li>
+        <li><kbd>2</kbd><i class="sw" style="background:var(--new)"></i><b>New</b><span>Wall jump, pound, spin</span></li>
+        <li><kbd>3</kbd><i class="sw" style="background:var(--world)"></i><b>World</b><span>Tight, long jump, dash</span></li>
+        <li><kbd>4</kbd><i class="sw" style="background:var(--wonder)"></i><b>Wonder</b><span>Floaty, forgiving timing</span></li>
+        <li><kbd>5</kbd><i class="sw" style="background:var(--custom)"></i><b>Custom</b><span>Your own tuning</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>Placeholder art. The player's color shows the active style; 60 ticks per second, same result on every device.</footer>
+</div>
+
+<script>
+  var canvas = document.getElementById('canvas');
+  var statusEl = document.getElementById('status');
+  var Module = {
+    canvas: canvas,
+    setStatus: function (t) { statusEl.textContent = t || 'Click the game to start playing.'; },
+    onRuntimeInitialized: function () { canvas.focus(); },
+    onAbort: function () { statusEl.textContent = 'The game failed to start in this browser.'; }
+  };
+  window.addEventListener('keydown', function (e) {
+    if (document.activeElement === canvas && [32, 37, 38, 39, 40].indexOf(e.keyCode) >= 0) e.preventDefault();
+  });
+  canvas.addEventListener('click', function () { canvas.focus(); });
+</script>
+<script src="index.js"></script>

@@ -68,29 +68,41 @@ jobs:
           name: mm3-web
           path: web-dist/
 
-  # Publishes the web build to GitHub Pages (https://bambitp.github.io/mm3/)
-  # on every push to main. One-time setup: repo Settings -> Pages ->
-  # Source: "GitHub Actions". See docs/TESTING.md.
+  # Publishes the web build to the gh-pages branch, served by GitHub Pages:
+  #   main           -> https://bambitp.github.io/mm3/
+  #   other branches -> https://bambitp.github.io/mm3/b/<branch, / replaced by ->/
+  # One-time setup: repo Settings -> Pages -> Source: "Deploy from a branch",
+  # branch gh-pages, folder / (root). See docs/TESTING.md.
   deploy-web:
-    needs: [native, web]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: web
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
     concurrency:
-      group: pages
-      cancel-in-progress: true
+      group: gh-pages
+      cancel-in-progress: false
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: mm3-web
           path: web-dist
-      - uses: actions/upload-pages-artifact@v3
+      - name: Pick destination folder
+        id: dest
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+            echo "url=https://bambitp.github.io/mm3/" >> "$GITHUB_OUTPUT"
+          else
+            slug=$(echo "$GITHUB_REF_NAME" | tr '/' '-' | tr -cd 'A-Za-z0-9._-')
+            echo "dir=b/$slug" >> "$GITHUB_OUTPUT"
+            echo "url=https://bambitp.github.io/mm3/b/$slug/" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: peaceiris/actions-gh-pages@v4
         with:
-          path: web-dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: web-dist
+          destination_dir: ${{ steps.dest.outputs.dir }}
+          keep_files: true
+      - name: Link
+        run: echo "Play at ${{ steps.dest.outputs.url }} (once Pages is enabled)" >> "$GITHUB_STEP_SUMMARY"
