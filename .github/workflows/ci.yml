@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Build + determinism test on every desktop OS. The golden-hash test proves
+  # every platform simulates bit-identically.
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            cmake_args: ""
+          - os: windows-latest
+            name: windows
+            cmake_args: "-DMM3_FETCH_SDL2=ON"
+          - os: macos-latest
+            name: macos
+            cmake_args: "-DMM3_FETCH_SDL2=ON"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SDL2 (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_args }}
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Determinism tests
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Collect game files
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/mm3 dist/ 2>/dev/null || cp build/Release/mm3.exe dist/ 2>/dev/null || true
+          ls dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mm3-${{ matrix.name }}
+          path: dist/
+
+  # Browser build (WebAssembly). Also runs the determinism test under Node.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+      - name: Configure
+        run: emcmake cmake -B build-web -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-web
+      - name: Determinism tests (WebAssembly)
+        run: ctest --test-dir build-web --output-on-failure
+      - name: Collect web files
+        run: |
+          mkdir -p web-dist
+          cp build-web/index.html build-web/index.js build-web/index.wasm web-dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mm3-web
+          path: web-dist/
+
+  # Publishes the web build to Cloudflare Pages. Skipped until the
+  # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets exist.
+  # See docs/TESTING.md.
+  deploy-web:
+    needs: web
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check for Cloudflare secrets
+        id: check
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Cloudflare secrets not set; skipping deploy (see docs/TESTING.md)."
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.check.outputs.ok == 'true'
+        with:
+          name: mm3-web
+          path: web-dist
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ok == 'true'
+        with:
+          node-version: 20
+      - name: Deploy to Cloudflare Pages
+        if: steps.check.outputs.ok == 'true'
+        run: |
+          npx --yes wrangler@3 pages project create mm3 --production-branch=main || true
+          npx --yes wrangler@3 pages deploy web-dist --project-name=mm3 --branch="${GITHUB_REF_NAME}" --commit-dirty=true

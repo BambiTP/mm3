@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MM3 prototype</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #ddd;
+               font-family: system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  canvas { width: min(96vw, calc(85vh * 1.75)); height: auto; aspect-ratio: 448 / 256;
+           image-rendering: pixelated; outline: none; background: #000; }
+  p { font-size: 14px; margin: 10px 16px; text-align: center; }
+  kbd { background: #333; border-radius: 3px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+<p id="status">Loading…</p>
+<p>
+  <kbd>←→</kbd>/<kbd>A D</kbd> move · <kbd>Z</kbd>/<kbd>Space</kbd> jump ·
+  <kbd>X</kbd>/<kbd>Shift</kbd> run · <kbd>↓</kbd> ground pound / long jump ·
+  <kbd>C</kbd> spin · <kbd>1</kbd>–<kbd>5</kbd> physics style · <kbd>R</kbd> restart
+</p>
+<script>
+  var canvas = document.getElementById('canvas');
+  var Module = {
+    canvas: canvas,
+    setStatus: function (t) { document.getElementById('status').textContent = t || 'Click the game, then play.'; },
+    onRuntimeInitialized: function () { canvas.focus(); }
+  };
+  Module.setStatus('Loading…');
+  window.addEventListener('keydown', function (e) {
+    if ([32, 37, 38, 39, 40].indexOf(e.keyCode) >= 0) e.preventDefault();
+  });
+  canvas.addEventListener('click', function () { canvas.focus(); });
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

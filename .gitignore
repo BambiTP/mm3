@@ -1,0 +1,11 @@
+build*/
+dist/
+web-dist/
+*.o
+*.obj
+*.exe
+.vs/
+.vscode/
+.idea/
+.DS_Store
+node_modules/
