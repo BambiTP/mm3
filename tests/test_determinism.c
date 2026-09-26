@@ -16,15 +16,15 @@
 #define RUN_FRAMES 3600 /* one minute of gameplay per style */
 
 static const uint32_t k_golden[MM3_STYLE_COUNT] = {
-    0x761131E6u, /* Retro          */
-    0x36D0566Bu, /* Arcade         */
-    0x87042EC4u, /* Island         */
-    0xE7293114u, /* Modern         */
-    0x0EAFB897u, /* Athletic       */
-    0x78CD2676u, /* Bloom          */
-    0x8C46E05Fu, /* Retro Classic  */
-    0x3FB94F26u, /* Island Classic */
-    0x98234E65u  /* Custom         */
+    0x761131E6u /* Retro          */,
+    0x36D0566Bu /* Arcade         */,
+    0x87042EC4u /* Island         */,
+    0xE7293114u /* Modern         */,
+    0xFF243BEAu /* Athletic       */,
+    0x85ED7B7Au /* Bloom          */,
+    0x8C46E05Fu /* Retro Classic  */,
+    0x3FB94F26u /* Island Classic */,
+    0x98234E65u /* Custom         */
 };
 
 /* Deterministic "bot" input: holds a random button combo for 8-40 frames. */

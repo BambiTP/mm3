@@ -8,6 +8,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(MM3_BUILD_FRONTEND "Build the SDL2 frontend (desktop or web)" ON)
 option(MM3_FETCH_SDL2 "Download and statically build SDL2 instead of using a system copy" OFF)
 option(MM3_BUILD_TESTS "Build tests" ON)
+option(MM3_BUILD_TOOLS "Build developer tools (jump calibration)" OFF)
 
 # ---------------------------------------------------------------------------
 # Core: the deterministic simulation. Pure C99, no floats, no OS calls.
@@ -44,6 +45,11 @@ if(MM3_BUILD_TESTS)
     add_executable(test_moves tests/test_moves.c)
     target_link_libraries(test_moves PRIVATE mm3_core)
     add_test(NAME moves COMMAND test_moves)
+endif()
+
+if(MM3_BUILD_TOOLS)
+    add_executable(calibrate_jump tools/calibrate_jump.c)
+    target_link_libraries(calibrate_jump PRIVATE mm3_core)
 endif()
 
 # ---------------------------------------------------------------------------

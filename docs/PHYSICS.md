@@ -66,6 +66,25 @@ future "Arcade Classic": walk speed `0x18`, run `0x28`, P-speed `0x38`
 (1/16 px per frame), from Data Crystal's SMB3 notes; the full disassembly is
 [captainsouthbird/smb3](https://github.com/captainsouthbird/smb3).
 
+## Shared jump height
+
+Every maker-family style (Retro, Arcade, Island, Modern, Athletic, Bloom,
+Custom) reaches the **same jump heights**, like the maker game where 3D World
+style jumps as high as the 2D styles but feels different. Only the arc changes:
+
+| Style | Gravity vs maker | Full standing jump | Airtime |
+|---|---|---|---|
+| Retro / Arcade / Island / Modern / Custom | 1.0x | 67.6 px (4.2 tiles) | 54 frames |
+| Athletic | 1.3x (snappy) | same (±0.4 px) | 47 frames |
+| Bloom | 0.65x (floaty) | same (±0.4 px) | 64 frames |
+
+Heights match at every speed band (standing 67.6 px, walking 78.6, running
+82.4, P-speed 86.3) and for a tapped jump (20.5 px). Athletic's and Bloom's
+launch speeds were found by `tools/calibrate_jump.c` (build with
+`-DMM3_BUILD_TOOLS=ON`), which runs the real engine and binary-searches the
+numbers; `tests/test_moves.c` checks the match every build. The Classic styles
+keep their original games' exact jumps.
+
 ## Athletic (maker 3D World style, 5)
 
 Its own engine in the maker game, with the biggest move set: dash (after

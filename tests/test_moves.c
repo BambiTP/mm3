@@ -468,6 +468,58 @@ static void test_maker_rules(void)
           "arcade maker: no toss up (throws forward)");
 }
 
+/* ------------------------------------------------ shared jump heights */
+
+/* Apex (1/4096 px) and airtime of a jump started at speed vx. */
+static mm3_fx apex_at(mm3_style style, mm3_fx vx, int hold, int *airtime)
+{
+    mm3_fx start, best;
+    int f;
+    SETUP(style, k_flat);
+    mm3_tick(&S, 0);
+    start = best = S.player.y + S.player.h;
+    S.player.vx = vx;
+    for (f = 0; f < 400; f++) {
+        mm3_tick(&S, f < hold ? MM3_BTN_JUMP : 0);
+        if (S.player.y + S.player.h < best) best = S.player.y + S.player.h;
+        if (f > 2 && S.player.mode == MM3_MODE_GROUND) break;
+    }
+    if (airtime) *airtime = f;
+    return start - best;
+}
+
+static void test_jump_heights(void)
+{
+    static const mm3_style styles[] = {
+        MM3_STYLE_ARCADE, MM3_STYLE_ISLAND, MM3_STYLE_MODERN, MM3_STYLE_ATHLETIC,
+        MM3_STYLE_BLOOM, MM3_STYLE_CUSTOM
+    };
+    static const mm3_fx speeds[4] = {0, MM3_MILLI(1200), MM3_MILLI(2500), MM3_MILLI(3000)};
+    int i, k, t_modern, t_athletic, t_bloom;
+    for (k = 0; k < 4; k++) {
+        mm3_fx ref_full = apex_at(MM3_STYLE_RETRO, speeds[k], 400, NULL);
+        for (i = 0; i < (int)(sizeof(styles) / sizeof(styles[0])); i++) {
+            mm3_fx a = apex_at(styles[i], speeds[k], 400, NULL);
+            CHECK(mm3_abs(a - ref_full) <= MM3_PX(1), "%s: full jump at %.1f px/f = %.2f px (maker %.2f)",
+                  mm3_style_name(styles[i]), px(speeds[k]), px(a), px(ref_full));
+        }
+    }
+    {
+        mm3_fx ref_tap = apex_at(MM3_STYLE_RETRO, 0, 1, NULL);
+        for (i = 0; i < (int)(sizeof(styles) / sizeof(styles[0])); i++) {
+            mm3_fx a = apex_at(styles[i], 0, 1, NULL);
+            CHECK(mm3_abs(a - ref_tap) <= MM3_PX(1), "%s: tap jump = %.2f px (maker %.2f)",
+                  mm3_style_name(styles[i]), px(a), px(ref_tap));
+        }
+    }
+    apex_at(MM3_STYLE_MODERN, 0, 400, &t_modern);
+    apex_at(MM3_STYLE_ATHLETIC, 0, 400, &t_athletic);
+    apex_at(MM3_STYLE_BLOOM, 0, 400, &t_bloom);
+    CHECK(t_athletic < t_modern && t_bloom > t_modern,
+          "same height, different feel: airtime Athletic %d < Modern %d < Bloom %d frames",
+          t_athletic, t_modern, t_bloom);
+}
+
 /* Running across slope/plateau seams never stops the player. */
 static const char *const k_seams[] = {
     "#..................................................................................#",
@@ -507,6 +559,7 @@ int main(int argc, char **argv)
     test_modern_moves();
     test_athletic_moves();
     test_maker_rules();
+    test_jump_heights();
     for (st = 0; st < MM3_STYLE_COUNT; st++) test_environment((mm3_style)st);
     for (st = 0; st < MM3_STYLE_COUNT; st++) test_seams((mm3_style)st);
     printf("%d/%d checks passed\n", g_checks - g_fail, g_checks);
