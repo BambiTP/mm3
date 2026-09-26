@@ -68,22 +68,38 @@ future "Arcade Classic": walk speed `0x18`, run `0x28`, P-speed `0x38`
 
 ## Shared jump height
 
-Every maker-family style (Retro, Arcade, Island, Modern, Athletic, Bloom,
-Custom) reaches the **same jump heights**, like the maker game where 3D World
-style jumps as high as the 2D styles but feels different. Only the arc changes:
+**Every style, including the Classics, reaches the same jump heights in real
+play.** The height depends on what you're doing, not on each style's raw
+speed:
 
-| Style | Gravity vs maker | Full standing jump | Airtime |
-|---|---|---|---|
-| Retro / Arcade / Island / Modern / Custom | 1.0x | 67.6 px (4.2 tiles) | 54 frames |
-| Athletic | 1.3x (snappy) | same (±0.4 px) | 47 frames |
-| Bloom | 0.65x (floaty) | same (±0.4 px) | 64 frames |
+| Jump | Height (feet rise) |
+|---|---|
+| Standing | 67.6 px (4.2 tiles) |
+| Walking | 78.6 px |
+| Running | 82.4 px |
+| Full speed (P-speed or dash) | 86.3 px |
+| Tapped (standing) | 20.5 px |
 
-Heights match at every speed band (standing 67.6 px, walking 78.6, running
-82.4, P-speed 86.3) and for a tapped jump (20.5 px). Athletic's and Bloom's
-launch speeds were found by `tools/calibrate_jump.c` (build with
-`-DMM3_BUILD_TOOLS=ON`), which runs the real engine and binary-searches the
-numbers; `tests/test_moves.c` checks the match every build. The Classic styles
-keep their original games' exact jumps.
+Bloom and Retro Classic have no full-speed state, so their top jump is the
+running jump.
+
+The modern engine picks a jump tier from the movement state (standing, walking
+up to walk speed, running faster than that, full P-meter or dash). The
+Classic engines keep their own speed tiers and gravity, but their launch
+speeds were re-tuned (see their sections). Only the arc changes per style:
+
+| Style | Gravity vs maker | Airtime of a standing jump |
+|---|---|---|
+| Retro / Arcade / Island / Modern / Custom | 1.0x | 54 frames |
+| Athletic | 1.3x (snappy) | 47 frames |
+| Bloom | 0.65x (floaty) | 64 frames |
+| Retro Classic / Island Classic | original gravity | original feel |
+
+All launch numbers come from `tools/calibrate_jump.c` (build with
+`-DMM3_BUILD_TOOLS=ON`). `tests/test_moves.c` plays standing, walking,
+running, full-speed and tapped jumps with real inputs in all 9 styles and
+checks each is within 1 px of the maker height (today: within 0.9 px; the
+Classic engines move in whole pixels or 1/16 px so they can't be finer).
 
 ## Athletic (maker 3D World style, 5)
 
@@ -139,6 +155,11 @@ per second. That unit stores all the source values without rounding:
 
 ## 7 · Retro Classic (original 8-bit engine)
 
+Exact original, **except jump launch speeds and tier-0 fall force**, which
+were re-tuned so its jumps match every other style. Original launch:
+−4 px/f (tiers 0-2), −5 px/f (tiers 3-4); tier-0 fall force `0x70`.
+
+
 Movement is a line-by-line port of the original's player routine:
 
 - Horizontal speed is a signed byte in 1/16 px/frame plus an 8-bit fraction.
@@ -169,6 +190,12 @@ Verified: walk top speed `0x18`, run `0x28`, standing full jump ≈4 tiles,
 running full jump ≈5 tiles, no air turning.
 
 ## 8 · Island Classic (original 16-bit engine)
+
+Exact original, **except the jump table and release gravity**, which were
+re-tuned so its jumps match every other style (new normal launch
+−82/−88/−88/−90/−90/−93/−93/−93, spin −73, release gravity 11). The
+original numbers and the measurements below are kept for reference.
+
 
 - Frame order matches the original: move with last frame's speed and collide,
   **then** read input and compute new speeds.

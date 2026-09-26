@@ -87,8 +87,6 @@ static double jump_rise(mm3_buttons move, mm3_buttons jump, int hold_frames, dou
 static void test_retro(void)
 {
     int f, maxv = 0;
-    double rise, dist;
-
     SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(120, MM3_BTN_RIGHT);
     CHECK(S.player.r_xspeed == 0x18, "retro walk top speed = 0x18 (1.5 px/f): got 0x%X", S.player.r_xspeed);
@@ -96,20 +94,6 @@ static void test_retro(void)
     SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     for (f = 0; f < 150; f++) { mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN); if (S.player.r_xspeed > maxv) maxv = S.player.r_xspeed; }
     CHECK(maxv == 0x28, "retro run top speed = 0x28 (2.5 px/f): got 0x%X", maxv);
-
-    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
-    rise = jump_rise(0, MM3_BTN_JUMP, 200, NULL);
-    CHECK(rise > 3.8 && rise < 4.2, "retro standing full jump ~4 tiles: %.2f", rise);
-
-    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
-    run(12, 0);
-    rise = jump_rise(0, MM3_BTN_JUMP, 1, NULL);
-    CHECK(rise > 0.9 && rise < 2.2, "retro tapped jump is short: %.2f", rise);
-
-    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
-    run(90, MM3_BTN_RIGHT | MM3_BTN_RUN);
-    rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_JUMP, 200, &dist);
-    CHECK(rise > 4.8 && rise < 5.25, "retro running full jump ~5 tiles: %.2f", rise);
 
     /* no mid-air turning: facing stays when pressing back in the air */
     SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
@@ -152,61 +136,6 @@ static void test_island(void)
     lo = 99; hi = -99;
     for (f = 0; f < 10; f++) { if (samples[f] < lo) lo = samples[f]; if (samples[f] > hi) hi = samples[f]; }
     CHECK(hi == 49 && lo == 47, "island sprint speed oscillates 47-49: %d %d %d %d %d", samples[0], samples[1], samples[2], samples[3], samples[4]);
-
-    /* launch speeds: 77/82/87/92 normal, 71/75/79/84 spin (first airborne frame) */
-    {
-        static const int want[4] = {77, 82, 87, 92};
-        static const int want_spin[4] = {71, 75, 79, 84};
-        static const int speeds[4] = {0, 21, 37, 49};
-        int i, spin;
-        for (spin = 0; spin < 2; spin++) {
-            for (i = 0; i < 4; i++) {
-                SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-                S.player.vx = speeds[i] * 256;
-                S.player.flags |= 0;
-                mm3_tick(&S, spin ? MM3_BTN_SPIN : MM3_BTN_JUMP);
-                CHECK(-hi16(S.player.vy) == (spin ? want_spin[i] : want[i]),
-                      "island %s launch at speed %d = %d: got %d", spin ? "spin" : "jump",
-                      speeds[i], spin ? want_spin[i] : want[i], -hi16(S.player.vy));
-            }
-        }
-    }
-
-    /* heights: normal (running) 5, sprint 6 (barely), spin 4/5, minimum 2 */
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    run(60, MM3_BTN_RIGHT | MM3_BTN_RUN);
-    S.player.pmeter = 0; S.player.vx = 37 * 256;
-    rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_JUMP, 200, NULL);
-    CHECK(rise > 4.6 && rise < 5.5, "island running jump ~5 tiles: %.2f", rise);
-
-    /* takeoff at 48-49 (the high point of the sprint oscillation); at 47 the
-       table gives one step less, which is why the original's max is "barely" */
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    run(150, MM3_BTN_RIGHT | MM3_BTN_RUN);
-    while (hi16(S.player.vx) < 48) mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN);
-    rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_JUMP, 200, &dist);
-    CHECK(rise > 5.5 && rise < 6.1, "island sprint jump just under 6 tiles: %.2f", rise);
-    CHECK(dist > 10.5 && dist < 13.5, "island sprint jump ~12 tiles long: %.2f", dist);
-
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    run(150, MM3_BTN_RIGHT | MM3_BTN_RUN);
-    rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_SPIN, 200, &dist);
-    CHECK(rise > 4.5 && rise < 5.1, "island sprint spin jump ~5 tiles: %.2f", rise);
-    CHECK(dist > 9.5 && dist < 12.5, "island sprint spin jump ~11 tiles long: %.2f", dist);
-
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    S.player.vx = 37 * 256;
-    rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_SPIN, 200, NULL);
-    CHECK(rise > 3.8 && rise < 4.6, "island running spin jump ~4 tiles: %.2f", rise);
-
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    rise = jump_rise(0, MM3_BTN_JUMP, 1, NULL);
-    CHECK(rise > 1.5 && rise < 2.3, "island minimum jump ~2 tiles: %.2f", rise);
-
-    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
-    run(100, MM3_BTN_RIGHT);
-    rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_JUMP, 200, &dist);
-    CHECK(dist > 4.0 && dist < 6.0, "island walking jump ~5 tiles long: %.2f", dist);
 
     /* spin jump state, look up, duck */
     SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
@@ -470,17 +399,17 @@ static void test_maker_rules(void)
 
 /* ------------------------------------------------ shared jump heights */
 
-/* Apex (1/4096 px) and airtime of a jump started at speed vx. */
-static mm3_fx apex_at(mm3_style style, mm3_fx vx, int hold, int *airtime)
+/* Real play: approach with `pre` held for `pre_frames`, then jump with
+   JUMP held for `hold` frames (while still holding `pre`). Returns apex. */
+static mm3_fx play_jump(mm3_style style, mm3_buttons pre, int pre_frames, int hold, int *airtime)
 {
     mm3_fx start, best;
     int f;
     SETUP(style, k_flat);
-    mm3_tick(&S, 0);
+    run(pre_frames, pre);
     start = best = S.player.y + S.player.h;
-    S.player.vx = vx;
     for (f = 0; f < 400; f++) {
-        mm3_tick(&S, f < hold ? MM3_BTN_JUMP : 0);
+        mm3_tick(&S, (mm3_buttons)(pre | (f < hold ? MM3_BTN_JUMP : 0)));
         if (S.player.y + S.player.h < best) best = S.player.y + S.player.h;
         if (f > 2 && S.player.mode == MM3_MODE_GROUND) break;
     }
@@ -490,31 +419,34 @@ static mm3_fx apex_at(mm3_style style, mm3_fx vx, int hold, int *airtime)
 
 static void test_jump_heights(void)
 {
-    static const mm3_style styles[] = {
-        MM3_STYLE_ARCADE, MM3_STYLE_ISLAND, MM3_STYLE_MODERN, MM3_STYLE_ATHLETIC,
-        MM3_STYLE_BLOOM, MM3_STYLE_CUSTOM
-    };
-    static const mm3_fx speeds[4] = {0, MM3_MILLI(1200), MM3_MILLI(2500), MM3_MILLI(3000)};
-    int i, k, t_modern, t_athletic, t_bloom;
-    for (k = 0; k < 4; k++) {
-        mm3_fx ref_full = apex_at(MM3_STYLE_RETRO, speeds[k], 400, NULL);
-        for (i = 0; i < (int)(sizeof(styles) / sizeof(styles[0])); i++) {
-            mm3_fx a = apex_at(styles[i], speeds[k], 400, NULL);
-            CHECK(mm3_abs(a - ref_full) <= MM3_PX(1), "%s: full jump at %.1f px/f = %.2f px (maker %.2f)",
-                  mm3_style_name(styles[i]), px(speeds[k]), px(a), px(ref_full));
+    enum { STAND, WALK, RUN, FULL, TAP, KINDS };
+    static const char *const kind_name[KINDS] = {"standing", "walking", "running", "full-speed", "tapped"};
+    mm3_fx ref[KINDS], a;
+    int st, k, t_modern, t_athletic, t_bloom;
+    for (k = 0; k < KINDS; k++) ref[k] = 0;
+    for (st = -1; st < MM3_STYLE_COUNT; st++) {
+        mm3_style style = st < 0 ? MM3_STYLE_MODERN : (mm3_style)st;
+        /* styles without a full-speed state top out at a running jump */
+        int has_full = style != MM3_STYLE_BLOOM && style != MM3_STYLE_RETRO_CLASSIC;
+        for (k = 0; k < KINDS; k++) {
+            switch (k) {
+            case STAND: a = play_jump(style, 0, 5, 400, NULL); break;
+            case WALK:  a = play_jump(style, MM3_BTN_RIGHT, 90, 400, NULL); break;
+            case RUN:   a = play_jump(style, MM3_BTN_RIGHT | MM3_BTN_RUN, 50, 400, NULL); break;
+            case FULL:  a = play_jump(style, MM3_BTN_RIGHT | MM3_BTN_RUN, 220, 400, NULL); break;
+            default:    a = play_jump(style, 0, 5, 1, NULL); break;
+            }
+            if (st < 0) { ref[k] = a; continue; }
+            {
+                mm3_fx want = (k == FULL && !has_full) ? ref[RUN] : ref[k];
+                CHECK(mm3_abs(a - want) <= MM3_PX(1), "%s: %s jump %.2f px (target %.2f)",
+                      mm3_style_name(style), kind_name[k], px(a), px(want));
+            }
         }
     }
-    {
-        mm3_fx ref_tap = apex_at(MM3_STYLE_RETRO, 0, 1, NULL);
-        for (i = 0; i < (int)(sizeof(styles) / sizeof(styles[0])); i++) {
-            mm3_fx a = apex_at(styles[i], 0, 1, NULL);
-            CHECK(mm3_abs(a - ref_tap) <= MM3_PX(1), "%s: tap jump = %.2f px (maker %.2f)",
-                  mm3_style_name(styles[i]), px(a), px(ref_tap));
-        }
-    }
-    apex_at(MM3_STYLE_MODERN, 0, 400, &t_modern);
-    apex_at(MM3_STYLE_ATHLETIC, 0, 400, &t_athletic);
-    apex_at(MM3_STYLE_BLOOM, 0, 400, &t_bloom);
+    play_jump(MM3_STYLE_MODERN, 0, 5, 400, &t_modern);
+    play_jump(MM3_STYLE_ATHLETIC, 0, 5, 400, &t_athletic);
+    play_jump(MM3_STYLE_BLOOM, 0, 5, 400, &t_bloom);
     CHECK(t_athletic < t_modern && t_bloom > t_modern,
           "same height, different feel: airtime Athletic %d < Modern %d < Bloom %d frames",
           t_athletic, t_modern, t_bloom);

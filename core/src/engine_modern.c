@@ -28,12 +28,28 @@ static int32_t band_gravity(const mm3_modern_profile *p, int32_t vy, int32_t hel
     return tbl[MM3_GRAV_BANDS - 1];
 }
 
-static int32_t jump_speed(const mm3_modern_profile *p, int32_t vx)
+/*
+ * Jump tier from what the player is doing, not raw speed, so every style
+ * gives the same height for a standing, walking, running and full-speed
+ * jump even though their walk/run speeds differ:
+ *   0 standing, 1 walking, 2 running, 3 full speed (P-meter full or dash).
+ */
+static int32_t jump_tier(const mm3_modern_profile *p, const mm3_player *pl)
 {
-    int32_t a = mm3_abs(vx), i;
-    for (i = 0; i < 3; i++)
-        if (a < p->jump_bonus_speed[i]) return p->jump_vel + p->jump_bonus[i];
-    return p->jump_vel + p->jump_bonus[3];
+    int32_t a = mm3_abs(pl->vx);
+    int32_t pfull = (p->moves & MM3_MOVE_PMETER) && p->pmeter_frames > 0 &&
+                    pl->pmeter >= p->pmeter_frames;
+    int32_t dash = (p->moves & MM3_MOVE_DASH) && p->dash_frames > 0 &&
+                   pl->run_timer >= p->dash_frames;
+    if ((pfull || dash) && a > p->run_max) return 3;
+    if (a < p->walk_max / 2) return 0;
+    if (a <= p->walk_max + MM3_MILLI(100)) return 1;
+    return 2;
+}
+
+static int32_t jump_speed(const mm3_modern_profile *p, const mm3_player *pl)
+{
+    return p->jump_vel + p->jump_bonus[jump_tier(p, pl)];
 }
 
 static void start_air(mm3_player *pl, int32_t action, int32_t vy)
@@ -100,7 +116,7 @@ static int32_t ground_jump(mm3_game_state *s, mm3_buttons b, int32_t dir, int32_
         return 1;
     }
     {
-        int32_t v = jump_speed(p, pl->vx);
+        int32_t v = jump_speed(p, pl);
         int32_t act = MM3_ACT_JUMP;
         mm3_player_set_crouch(pl, &s->map, 0);
         if (has(p, MM3_MOVE_TRIPLE_JUMP) && pl->carry < 0) {

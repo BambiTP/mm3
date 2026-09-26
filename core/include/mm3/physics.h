@@ -79,8 +79,7 @@ typedef struct {
     int32_t air_accel, air_turn;
     /* Jump */
     int32_t jump_vel;                       /* base launch speed (positive = up) */
-    int32_t jump_bonus_speed[3];            /* |vx| thresholds                   */
-    int32_t jump_bonus[4];                  /* added to jump_vel per band        */
+    int32_t jump_bonus[4];                  /* added per tier: stand/walk/run/full */
     int32_t double_jump_pct, triple_jump_pct; /* % of launch speed               */
     int32_t chain_frames;                   /* window to chain the next jump     */
     int32_t chain_min_speed;                /* |vx| needed to chain              */

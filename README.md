@@ -21,11 +21,12 @@ slopes, and procedural placeholder art per style.
 | 4 | Modern | Level-maker HD style: triple jump, ground pound, twirl |
 | 5 | Athletic | Level-maker 3D-era style: long jump, backflip, roll, crawl, dash |
 | 6 | Bloom | Floaty and forgiving extra style |
-| 7 | Retro Classic | The original 8-bit engine, exact |
-| 8 | Island Classic | The original 16-bit engine, exact |
+| 7 | Retro Classic | The original 8-bit engine (jump heights matched to the others) |
+| 8 | Island Classic | The original 16-bit engine (jump heights matched to the others) |
 | 9 | Custom | Every move, tunable |
 
-Details, sources and accuracy of every number: [docs/PHYSICS.md](docs/PHYSICS.md).
+Every style jumps the same heights (standing, walking, running, full speed);
+only the feel of the arc differs. Details, sources and accuracy of every number: [docs/PHYSICS.md](docs/PHYSICS.md).
 
 ## Testing without a dev setup
 

@@ -17,9 +17,18 @@
 
 /* Tables indexed by jump tier 0-4 (by run speed) and 5-6 (water). */
 static const int32_t k_jump_mforce[7] = {0x20, 0x20, 0x1E, 0x28, 0x28, 0x0D, 0x04};
-static const int32_t k_fall_mforce[7] = {0x70, 0x70, 0x60, 0x90, 0x90, 0x0A, 0x09};
-static const int32_t k_init_yspeed[7] = {-4, -4, -4, -5, -5, -2, -1};
-static const int32_t k_init_mforce[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00};
+/* Fall force: original except tier 0 (0x70 -> 0x83) so a tapped jump
+   matches the other styles. */
+static const int32_t k_fall_mforce[7] = {0x83, 0x70, 0x60, 0x90, 0x90, 0x0A, 0x09};
+/*
+ * Launch speed per tier in 1/256 px/frame (speed byte * 256 + move force).
+ * MM3 change: the jump tiers (0-4) are re-tuned by tools/calibrate_jump.c so
+ * standing / walking / running jumps reach the same heights as every other
+ * style. The original values were {-4.0, -4.0, -4.0, -5.0, -5.0} px/f
+ * (PlayerYSpdData $fc,$fc,$fc,$fb,$fb with InitMForceData 0); swim tiers
+ * (5, 6) are unchanged.
+ */
+static const int32_t k_launch[7] = {-1032, -1115, -1080, -1277, -1277, -384, -256};
 /* Max speed and acceleration by physics row: 0 = run, 1 = walk, 2 = water. */
 static const int32_t k_max_right[3] = {0x28, 0x18, 0x10};
 static const int32_t k_friction[3] = {0xE4, 0x98, 0xD0};
@@ -139,8 +148,8 @@ static void init_jump(mm3_player *pl, int32_t swimming)
     if (swimming) tier = 5;
     pl->r_vforce = k_jump_mforce[tier];
     pl->r_vforce_down = k_fall_mforce[tier];
-    pl->r_ymf = k_init_mforce[tier];
-    pl->r_yspeed = k_init_yspeed[tier];
+    pl->r_yspeed = mm3_floor_div(k_launch[tier], 256);
+    pl->r_ymf = k_launch[tier] - pl->r_yspeed * 256;
 }
 
 void mm3_engine_retro_tick(mm3_game_state *s, mm3_buttons b)

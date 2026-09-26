@@ -23,9 +23,16 @@
 #define PMETER_FULL    0x70
 
 /* Jump launch Y speed (high byte), pairs of {normal, spin} by |X speed|/8. */
+/*
+ * MM3 change: re-tuned by tools/calibrate_jump.c so standing / walking /
+ * running / P-speed jumps reach the same heights as every other style, and
+ * the spin jump matches the maker spin jump. The original table
+ * (DATA_00D2BD) was normal -0x50,-0x52,-0x55,-0x57,-0x5A,-0x5C,-0x5F,-0x61
+ * and spin -0x4A,-0x4C,-0x4E,-0x50,-0x52,-0x55,-0x57,-0x5A.
+ */
 static const int32_t k_jump_table[16] = {
-    -0x50, -0x4A, -0x52, -0x4C, -0x55, -0x4E, -0x57, -0x50,
-    -0x5A, -0x52, -0x5C, -0x55, -0x5F, -0x57, -0x61, -0x5A
+    -82, -73, -88, -73, -88, -73, -90, -73,
+    -90, -73, -93, -73, -93, -73, -93, -73
 };
 /* Max X speed (high byte) by (row << 1 | dir): walk, run, run, sprint. */
 static const int32_t k_max_speed[8] = {-20, 20, -36, 36, -36, 36, -48, 48};
@@ -111,7 +118,9 @@ static void gravity(mm3_player *pl, mm3_buttons b)
         if (a >= 0x40) a = 0x40;
         if (pl->i_in_air == IN_AIR_JUMP) pl->i_in_air = IN_AIR_FALL;
     }
-    a += held ? 3 : 6;
+    /* held 3 (original); released 11 instead of the original 6 so a tapped
+       jump matches the other styles (MM3 change) */
+    a += held ? 3 : 11;
     pl->vy = a * 256;
 }
 

@@ -26,9 +26,9 @@
     M(60), M(60), M(100), M(120),                                              \
     /* air accel is lower than on the ground */                               \
     M(35), M(60),                                                              \
-    /* jump 3.628 + speed bonus (Exact) */                                    \
+    /* jump 3.628 + bonus per tier stand/walk/run/full (Exact values) */                                    \
     M(3628),                                                                   \
-    {M(700), M(1500), M(2800)}, {0, M(180), M(240), M(300)},                   \
+    {0, M(180), M(240), M(300)},                   \
     /* double %, triple % (x1.05 Exact), chain window, chain min speed */     \
     100, 105, 10, M(1),                                                        \
     /* gravity bands (Exact) */                                               \
@@ -88,7 +88,7 @@ static const mm3_modern_profile k_athletic = {
     /* Jump: same heights as the maker styles, snappier arc (1.3x gravity,
        airtime 47 vs 54 frames). Calibrated by tools/calibrate_jump.c. */
     16171,
-    {M(700), M(1500), M(2800)}, {0, 813, 1088, 1407},
+    {0, 813, 1088, 1407},
     100, 100, 0, 0,
     {M(2500), M(1500), M(300), M(-120), M(-3000)},
     {319, 1331, 1810, 426, 1651, 1810},
@@ -122,7 +122,7 @@ static const mm3_modern_profile k_bloom = {
     /* Jump: same heights as the maker styles, floatier arc (0.65x gravity,
        airtime 64 vs 54 frames). Calibrated by tools/calibrate_jump.c. */
     13060,
-    {M(700), M(1500), M(2800)}, {0, 520, 698, 891},
+    {0, 520, 698, 891},
     100, 100, 0, 0,
     {M(2500), M(1500), M(300), M(-120), M(-3000)},
     {159, 665, 905, 213, 825, 905},
@@ -152,7 +152,7 @@ static const mm3_modern_profile k_custom = {
     M(60), M(60), M(100), M(120),
     M(35), M(60),
     M(3628),
-    {M(700), M(1500), M(2800)}, {0, M(180), M(240), M(300)},
+    {0, M(180), M(240), M(300)},
     100, 105, 10, M(1),
     {M(2500), M(1500), M(300), M(-120), M(-3000)},
     {M(60), M(250), M(340), M(80), M(310), M(340)},
