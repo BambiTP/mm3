@@ -17,6 +17,8 @@ typedef struct {
     int32_t head;     /* hit a ceiling while moving up                       */
     int32_t wall_l;   /* blocked (or touching) on the left                   */
     int32_t wall_r;   /* blocked (or touching) on the right                  */
+    int32_t blocked_l;/* the move was actually stopped by a wall on the left */
+    int32_t blocked_r;/* ... on the right                                    */
     int32_t slope;    /* steepness under the feet: -2..2 (+ = rising right)  */
 } mm3_hit;
 
@@ -39,6 +41,7 @@ void mm3_player_apply_hit(mm3_player *pl, const mm3_hit *hit);
 int32_t mm3_player_try_pickup(mm3_game_state *s);  /* returns 1 if picked up  */
 void mm3_player_throw(mm3_game_state *s, mm3_buttons b, mm3_fx vx, mm3_fx vy, mm3_fx up_vy);
 void mm3_player_update_carry(mm3_game_state *s);
+void mm3_player_try_kick(mm3_game_state *s, mm3_fx vx);
 void mm3_player_check_pit(mm3_game_state *s);
 void mm3_player_reset(mm3_player *pl);
 void mm3_player_update_pose(mm3_game_state *s, mm3_buttons b);

@@ -41,7 +41,7 @@ void mm3_objects_tick(mm3_game_state *s)
         mm3_move_box(&s->map, &o->x, &o->y, o->w, o->h, o->vx, o->vy, o->on_ground, &hit);
         o->on_ground = hit.ground;
         if (hit.head && o->vy < 0) o->vy = 0;
-        if ((hit.wall_l && o->vx < 0) || (hit.wall_r && o->vx > 0)) o->vx = -o->vx / 2;
+        if ((hit.blocked_l && o->vx < 0) || (hit.blocked_r && o->vx > 0)) o->vx = -o->vx / 2;
         if (hit.ground) {
             o->vy = 0;
             o->vx = mm3_approach(o->vx, 0, CRATE_FRICTION);

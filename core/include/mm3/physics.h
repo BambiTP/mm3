@@ -16,13 +16,22 @@
 #include <stdint.h>
 #include "fixed.h"
 
+/*
+ * The first five styles follow the level-maker versions of their source
+ * games: the four 2D ones share one physics profile and differ only in
+ * moves (like the source maker game); Athletic has its own. The two
+ * "Classic" styles run the exact original-game engines.
+ */
 typedef enum {
-    MM3_STYLE_RETRO    = 0, /* 8-bit era (source: SMB1)                 */
-    MM3_STYLE_ISLAND   = 1, /* 16-bit era (source: SMW)                 */
-    MM3_STYLE_MODERN   = 2, /* HD 2D (source: NSMB Wii/U)               */
-    MM3_STYLE_ATHLETIC = 3, /* 3D-era moves in 2D (source: 3D World)    */
-    MM3_STYLE_BLOOM    = 4, /* newest 2D (source: Wonder)               */
-    MM3_STYLE_CUSTOM   = 5, /* user-tunable, every move available       */
+    MM3_STYLE_RETRO          = 0, /* maker SMB1 style                         */
+    MM3_STYLE_ARCADE         = 1, /* maker SMB3 style                         */
+    MM3_STYLE_ISLAND         = 2, /* maker SMW style                          */
+    MM3_STYLE_MODERN         = 3, /* maker NSMBU style                        */
+    MM3_STYLE_ATHLETIC       = 4, /* maker 3D World style                     */
+    MM3_STYLE_BLOOM          = 5, /* extra: Wonder-inspired                   */
+    MM3_STYLE_RETRO_CLASSIC  = 6, /* exact original SMB1 engine               */
+    MM3_STYLE_ISLAND_CLASSIC = 7, /* exact original SMW engine                */
+    MM3_STYLE_CUSTOM         = 8, /* user-tunable, every move available       */
     MM3_STYLE_COUNT
 } mm3_style;
 
@@ -48,7 +57,14 @@ enum {
     MM3_MOVE_CARRY        = 1u << 10, /* pick up / throw crates with RUN      */
     MM3_MOVE_SWIM         = 1u << 11,
     MM3_MOVE_CLIMB        = 1u << 12,
-    MM3_MOVE_CROUCH_JUMP  = 1u << 13
+    MM3_MOVE_CROUCH_JUMP  = 1u << 13,
+    MM3_MOVE_PMETER       = 1u << 14, /* run on the ground to fill; full = sprint */
+    MM3_MOVE_KICK         = 1u << 15, /* touching a resting crate kicks it      */
+    MM3_MOVE_THROW_UP     = 1u << 16, /* hold UP when releasing RUN             */
+    MM3_MOVE_CRAWL        = 1u << 17, /* move slowly while crouched             */
+    MM3_MOVE_ROLL         = 1u << 18, /* SPIN while crouched: forward roll      */
+    MM3_RULE_AIR_LOCK     = 1u << 19, /* can't gain speed in the air past takeoff */
+    MM3_RULE_SLOWFALL     = 1u << 20  /* holding jump while falling falls slower */
 };
 
 #define MM3_GRAV_BANDS 6
@@ -89,6 +105,11 @@ typedef struct {
     int32_t throw_vx, throw_vy, throw_up_vy;
     /* Forgiveness windows (frames) */
     int32_t coyote_frames, buffer_frames;
+    /* Maker rules */
+    int32_t sprint_max, pmeter_frames;   /* P-meter: frames at run speed to fill */
+    int32_t slowfall_gravity;
+    int32_t backflip_charge;             /* frames crouched before a backflip     */
+    int32_t crawl_speed, roll_vx, roll_frames;
     uint32_t moves;
 } mm3_modern_profile;
 

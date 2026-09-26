@@ -32,8 +32,8 @@ to a lawyer before launch.
   "recreations" of recognizable jingles (coin sound, power-up, level clear).
 - **Trade dress**: don't replicate specific UI layouts, logos, title-screen
   compositions or the exact look of the four official art styles. The four
-  physics styles have their own public names (Retro, Island, Modern,
-  Athletic, Bloom, Custom); the source game titles appear only in code
+  physics styles have their own public names (Retro, Arcade, Island, Modern,
+  Athletic, Bloom, Retro Classic, Island Classic, Custom); the source game titles appear only in code
   comments and docs, never in the game UI or store page.
 - Marketing that says "like Mario Maker 3" or uses their screenshots.
 

@@ -89,30 +89,30 @@ static void test_retro(void)
     int f, maxv = 0;
     double rise, dist;
 
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(120, MM3_BTN_RIGHT);
     CHECK(S.player.r_xspeed == 0x18, "retro walk top speed = 0x18 (1.5 px/f): got 0x%X", S.player.r_xspeed);
 
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     for (f = 0; f < 150; f++) { mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN); if (S.player.r_xspeed > maxv) maxv = S.player.r_xspeed; }
     CHECK(maxv == 0x28, "retro run top speed = 0x28 (2.5 px/f): got 0x%X", maxv);
 
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     rise = jump_rise(0, MM3_BTN_JUMP, 200, NULL);
     CHECK(rise > 3.8 && rise < 4.2, "retro standing full jump ~4 tiles: %.2f", rise);
 
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(12, 0);
     rise = jump_rise(0, MM3_BTN_JUMP, 1, NULL);
     CHECK(rise > 0.9 && rise < 2.2, "retro tapped jump is short: %.2f", rise);
 
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(90, MM3_BTN_RIGHT | MM3_BTN_RUN);
     rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_JUMP, 200, &dist);
     CHECK(rise > 4.8 && rise < 5.25, "retro running full jump ~5 tiles: %.2f", rise);
 
     /* no mid-air turning: facing stays when pressing back in the air */
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(60, MM3_BTN_RIGHT | MM3_BTN_RUN);
     mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_JUMP);
     run(10, MM3_BTN_LEFT | MM3_BTN_JUMP);
@@ -120,7 +120,7 @@ static void test_retro(void)
     CHECK(S.player.r_xspeed > 0, "retro keeps momentum in the air (speed 0x%X)", S.player.r_xspeed);
 
     /* crouch */
-    SETUP(MM3_STYLE_RETRO, k_flat);
+    SETUP(MM3_STYLE_RETRO_CLASSIC, k_flat);
     run(5, MM3_BTN_DOWN);
     CHECK(S.player.pose == MM3_POSE_CROUCH, "retro crouch pose");
 }
@@ -133,14 +133,14 @@ static void test_island(void)
     double rise, dist;
 
     /* walking speed oscillates just above 20 */
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(100, MM3_BTN_RIGHT);
     lo = 99; hi = -99;
     for (f = 0; f < 20; f++) { mm3_tick(&S, MM3_BTN_RIGHT); if (hi16(S.player.vx) < lo) lo = hi16(S.player.vx); if (hi16(S.player.vx) > hi) hi = hi16(S.player.vx); }
     CHECK(hi == 21 && lo >= 19, "island walk speed peaks at 21 (range %d-%d)", lo, hi);
 
     /* P-meter: full after ~80 frames, speed 49 after ~90 */
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     for (f = 1; f <= 200; f++) {
         mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN);
         if (pm_frame < 0 && S.player.pmeter >= 0x70) pm_frame = f;
@@ -161,7 +161,7 @@ static void test_island(void)
         int i, spin;
         for (spin = 0; spin < 2; spin++) {
             for (i = 0; i < 4; i++) {
-                SETUP(MM3_STYLE_ISLAND, k_flat);
+                SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
                 S.player.vx = speeds[i] * 256;
                 S.player.flags |= 0;
                 mm3_tick(&S, spin ? MM3_BTN_SPIN : MM3_BTN_JUMP);
@@ -173,7 +173,7 @@ static void test_island(void)
     }
 
     /* heights: normal (running) 5, sprint 6 (barely), spin 4/5, minimum 2 */
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(60, MM3_BTN_RIGHT | MM3_BTN_RUN);
     S.player.pmeter = 0; S.player.vx = 37 * 256;
     rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_JUMP, 200, NULL);
@@ -181,42 +181,42 @@ static void test_island(void)
 
     /* takeoff at 48-49 (the high point of the sprint oscillation); at 47 the
        table gives one step less, which is why the original's max is "barely" */
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(150, MM3_BTN_RIGHT | MM3_BTN_RUN);
     while (hi16(S.player.vx) < 48) mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN);
     rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_JUMP, 200, &dist);
     CHECK(rise > 5.5 && rise < 6.1, "island sprint jump just under 6 tiles: %.2f", rise);
     CHECK(dist > 10.5 && dist < 13.5, "island sprint jump ~12 tiles long: %.2f", dist);
 
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(150, MM3_BTN_RIGHT | MM3_BTN_RUN);
     rise = jump_rise(MM3_BTN_RIGHT | MM3_BTN_RUN, MM3_BTN_SPIN, 200, &dist);
     CHECK(rise > 4.5 && rise < 5.1, "island sprint spin jump ~5 tiles: %.2f", rise);
     CHECK(dist > 9.5 && dist < 12.5, "island sprint spin jump ~11 tiles long: %.2f", dist);
 
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     S.player.vx = 37 * 256;
     rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_SPIN, 200, NULL);
     CHECK(rise > 3.8 && rise < 4.6, "island running spin jump ~4 tiles: %.2f", rise);
 
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     rise = jump_rise(0, MM3_BTN_JUMP, 1, NULL);
     CHECK(rise > 1.5 && rise < 2.3, "island minimum jump ~2 tiles: %.2f", rise);
 
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(100, MM3_BTN_RIGHT);
     rise = jump_rise(MM3_BTN_RIGHT, MM3_BTN_JUMP, 200, &dist);
     CHECK(dist > 4.0 && dist < 6.0, "island walking jump ~5 tiles long: %.2f", dist);
 
     /* spin jump state, look up, duck */
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     mm3_tick(&S, MM3_BTN_SPIN);
     run(3, MM3_BTN_SPIN);
     CHECK(S.player.pose == MM3_POSE_SPIN, "island spin jump pose");
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(3, MM3_BTN_UP);
     CHECK(S.player.pose == MM3_POSE_LOOK_UP, "island look up pose");
-    SETUP(MM3_STYLE_ISLAND, k_flat);
+    SETUP(MM3_STYLE_ISLAND_CLASSIC, k_flat);
     run(3, MM3_BTN_DOWN);
     CHECK(S.player.pose == MM3_POSE_CROUCH, "island duck pose");
 }
@@ -298,7 +298,11 @@ static void test_athletic_moves(void)
     SETUP(MM3_STYLE_ATHLETIC, k_flat);
     run(5, MM3_BTN_DOWN);
     mm3_tick(&S, MM3_BTN_DOWN | MM3_BTN_JUMP);
-    CHECK(S.player.action == MM3_ACT_BACKFLIP, "athletic backflip from a still crouch");
+    CHECK(S.player.action != MM3_ACT_BACKFLIP, "athletic backflip needs a longer crouch");
+    SETUP(MM3_STYLE_ATHLETIC, k_flat);
+    run(65, MM3_BTN_DOWN);
+    mm3_tick(&S, MM3_BTN_DOWN | MM3_BTN_JUMP);
+    CHECK(S.player.action == MM3_ACT_BACKFLIP, "athletic backflip after a 1 s crouch");
     r_back = jump_rise(0, MM3_BTN_JUMP, 200, NULL);
     CHECK(r_back > r_jump, "backflip is higher than a normal jump (%.2f > %.2f)", r_back, r_jump);
 
@@ -310,12 +314,27 @@ static void test_athletic_moves(void)
     CHECK(S.player.action == MM3_ACT_LONG_JUMP && S.player.vx > S.profile.run_max,
           "athletic long jump is faster than running (%.2f px/f)", px(S.player.vx));
 
-    /* side flip: jump while skidding */
+    /* long jump on run + action button */
     SETUP(MM3_STYLE_ATHLETIC, k_flat);
+    run(90, MM3_BTN_RIGHT | MM3_BTN_RUN);
+    mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN | MM3_BTN_SPIN);
+    CHECK(S.player.action == MM3_ACT_LONG_JUMP, "athletic long jump with run + action button");
+
+    /* roll from a crouch, crawl */
+    SETUP(MM3_STYLE_ATHLETIC, k_flat);
+    run(3, MM3_BTN_DOWN);
+    mm3_tick(&S, MM3_BTN_DOWN | MM3_BTN_SPIN);
+    CHECK(S.player.action == MM3_ACT_ROLL && S.player.vx > 0, "athletic roll from a crouch");
+    SETUP(MM3_STYLE_ATHLETIC, k_flat);
+    run(30, MM3_BTN_DOWN | MM3_BTN_RIGHT);
+    CHECK((S.player.flags & MM3_PF_CROUCH) && S.player.vx > 0, "athletic crawl while crouched");
+
+    /* side flip: jump while skidding (Custom has it) */
+    SETUP(MM3_STYLE_CUSTOM, k_flat);
     run(60, MM3_BTN_RIGHT | MM3_BTN_RUN);
     mm3_tick(&S, MM3_BTN_LEFT);
     mm3_tick(&S, MM3_BTN_LEFT | MM3_BTN_JUMP);
-    CHECK(S.player.action == MM3_ACT_SIDEFLIP && S.player.vx < 0, "athletic side flip reverses direction");
+    CHECK(S.player.action == MM3_ACT_SIDEFLIP && S.player.vx < 0, "custom side flip reverses direction");
 
     /* dash: keep running to go faster than run speed */
     SETUP(MM3_STYLE_ATHLETIC, k_flat);
@@ -350,6 +369,12 @@ static void test_environment(mm3_style style)
     for (i = 0; i < 20; i++) mm3_tick(&S, (i % 8) == 0 ? MM3_BTN_JUMP : 0);
     CHECK(S.player.y < y0, "%s: swim strokes rise (%.1f px)", name, px(y0 - S.player.y));
 
+    /* vines need UP: walking through one doesn't grab it */
+    SETUP(style, k_features);
+    mm3_place_player(&S, 42, 10);
+    run(40, MM3_BTN_RIGHT);
+    CHECK(S.player.mode != MM3_MODE_CLIMB, "%s: walking past a vine doesn't grab it", name);
+
     /* climbing: vine at x = 44 */
     SETUP(style, k_features);
     mm3_place_player(&S, 44, 10);
@@ -360,7 +385,7 @@ static void test_environment(mm3_style style)
     CHECK(S.player.y < y0 - MM3_PX(8), "%s: climb up (%.1f px)", name, px(y0 - S.player.y));
 
     /* carrying (crate at x = 52) */
-    if (style != MM3_STYLE_RETRO) {
+    if (style != MM3_STYLE_RETRO && style != MM3_STYLE_RETRO_CLASSIC) {
         SETUP(style, k_features);
         mm3_place_player(&S, 51, 10);
         run(3, 0);
@@ -382,6 +407,97 @@ static void test_environment(mm3_style style)
           "%s: walk over slopes without sinking (x=%.1f tiles)", name, tiles(S.player.x));
 }
 
+/* ------------------------------------------------------- maker rules */
+
+static void test_maker_rules(void)
+{
+    mm3_fx v0;
+    int i;
+    double fall_hold, fall_free;
+
+    /* air-lock: jumping from a walk, holding run in the air can't speed up */
+    SETUP(MM3_STYLE_RETRO, k_flat);
+    run(60, MM3_BTN_RIGHT);
+    v0 = S.player.vx;
+    mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_JUMP);
+    run(20, MM3_BTN_RIGHT | MM3_BTN_RUN | MM3_BTN_JUMP);
+    CHECK(S.player.mode == MM3_MODE_AIR && S.player.vx <= v0, "maker: no speeding up in the air (%.2f <= %.2f)", px(S.player.vx), px(v0));
+
+    /* P-meter fills on the ground and unlocks sprint speed */
+    SETUP(MM3_STYLE_ISLAND, k_flat);
+    run(150, MM3_BTN_RIGHT | MM3_BTN_RUN);
+    CHECK(S.player.pmeter >= S.profile.pmeter_frames && S.player.vx > S.profile.run_max,
+          "maker: full P-meter sprints (%.2f px/f)", px(S.player.vx));
+    SETUP(MM3_STYLE_ISLAND, k_flat);
+    run(20, MM3_BTN_RIGHT | MM3_BTN_RUN);
+    i = S.player.pmeter;
+    mm3_tick(&S, MM3_BTN_RIGHT | MM3_BTN_RUN | MM3_BTN_JUMP);
+    run(10, MM3_BTN_RIGHT | MM3_BTN_RUN | MM3_BTN_JUMP);
+    CHECK(S.player.pmeter <= i, "maker: P-meter doesn't fill in the air");
+
+    /* slowfall: holding jump while falling falls slower */
+    SETUP(MM3_STYLE_MODERN, k_flat);
+    S.player.y -= MM3_PX(96); S.player.mode = MM3_MODE_AIR; S.player.vy = 0;
+    run(12, MM3_BTN_JUMP);
+    fall_hold = px(S.player.vy);
+    SETUP(MM3_STYLE_MODERN, k_flat);
+    S.player.y -= MM3_PX(96); S.player.mode = MM3_MODE_AIR; S.player.vy = 0;
+    run(12, 0);
+    fall_free = px(S.player.vy);
+    CHECK(fall_hold < fall_free, "maker: slowfall (%.2f < %.2f px/f)", fall_hold, fall_free);
+
+    /* 8-bit maker style can't carry but kicks */
+    SETUP(MM3_STYLE_RETRO, k_features);
+    mm3_place_player(&S, 50, 10);
+    run(45, MM3_BTN_RIGHT | MM3_BTN_RUN);
+    CHECK(S.player.carry < 0 && S.objs[0].vx > 0, "retro maker: kicks the crate instead of carrying");
+
+    /* 16-bit maker style tosses up */
+    SETUP(MM3_STYLE_ISLAND, k_features);
+    mm3_place_player(&S, 51, 10);
+    run(3, 0);
+    run(3, MM3_BTN_RUN);
+    mm3_tick(&S, MM3_BTN_UP);
+    CHECK(S.objs[0].vy < 0, "island maker: toss the crate up");
+    SETUP(MM3_STYLE_ARCADE, k_features);
+    mm3_place_player(&S, 51, 10);
+    run(3, 0);
+    run(3, MM3_BTN_RUN);
+    mm3_tick(&S, MM3_BTN_UP);
+    CHECK(S.objs[0].vx != 0 && S.objs[0].vy > -S.profile.throw_up_vy / 2,
+          "arcade maker: no toss up (throws forward)");
+}
+
+/* Running across slope/plateau seams never stops the player. */
+static const char *const k_seams[] = {
+    "#..................................................................................#",
+    "#..................................................................................#",
+    "#..................................................................................#",
+    "#..................................................................................#",
+    "#........................................................................./\\.......#",
+    "#.............uU######\\......................../\\......................../##\\......#",
+    "#.P..........uU########\\....uUDd............../##\\.-----................/####\\.....#",
+    "####################################################################################",
+    "####################################################################################"
+};
+
+static void test_seams(mm3_style style)
+{
+    int pass, f, stops, done;
+    for (pass = 0; pass < 2; pass++) {
+        mm3_buttons b = MM3_BTN_RIGHT | (pass ? MM3_BTN_RUN : 0);
+        SETUP(style, k_seams);
+        stops = 0; done = 0;
+        for (f = 0; f < 1200 && !done; f++) {
+            mm3_tick(&S, b);
+            if (f > 40 && S.player.mode == MM3_MODE_GROUND && S.player.vx == 0) stops++;
+            if (S.player.x > 80 * MM3_TILE_FX) done = 1;
+        }
+        CHECK(done && stops == 0, "%s: %s across slope seams without stopping (%d stops)",
+              mm3_style_name(style), pass ? "run" : "walk", stops);
+    }
+}
+
 int main(int argc, char **argv)
 {
     int st;
@@ -390,7 +506,9 @@ int main(int argc, char **argv)
     test_island();
     test_modern_moves();
     test_athletic_moves();
+    test_maker_rules();
     for (st = 0; st < MM3_STYLE_COUNT; st++) test_environment((mm3_style)st);
+    for (st = 0; st < MM3_STYLE_COUNT; st++) test_seams((mm3_style)st);
     printf("%d/%d checks passed\n", g_checks - g_fail, g_checks);
     return g_fail ? 1 : 0;
 }

@@ -121,6 +121,7 @@ void mm3_move_box(const mm3_tilemap *m, mm3_fx *x, mm3_fx *y, mm3_fx w, mm3_fx h
 {
     mm3_fx prev_bottom;
     out->ground = out->head = out->wall_l = out->wall_r = 0;
+    out->blocked_l = out->blocked_r = 0;
     out->slope = 0;
 
     /* Never move a full tile in one step: no tunneling. */
@@ -139,8 +140,8 @@ void mm3_move_box(const mm3_tilemap *m, mm3_fx *x, mm3_fx *y, mm3_fx w, mm3_fx h
                 }
             }
             if (!stepped) {
-                if (dx > 0) { *x = mm3_floor_div(*x + w - 1, T) * T - w; out->wall_r = 1; }
-                else        { *x = (mm3_floor_div(*x, T) + 1) * T;      out->wall_l = 1; }
+                if (dx > 0) { *x = mm3_floor_div(*x + w - 1, T) * T - w; out->wall_r = out->blocked_r = 1; }
+                else        { *x = (mm3_floor_div(*x, T) + 1) * T;      out->wall_l = out->blocked_l = 1; }
             }
         }
     }
@@ -171,7 +172,8 @@ void mm3_move_box(const mm3_tilemap *m, mm3_fx *x, mm3_fx *y, mm3_fx w, mm3_fx h
         }
     }
 
-    /* Wall contact (for wall slides) even without horizontal motion. */
-    if (mm3_box_solid(m, *x - 1, *y, 1, h - MM3_PX(2))) out->wall_l = 1;
-    if (mm3_box_solid(m, *x + w, *y, 1, h - MM3_PX(2))) out->wall_r = 1;
+    /* Wall contact (for wall slides) even without horizontal motion. The
+       bottom 6 px are ignored so a slope lip or ledge seam never counts. */
+    if (mm3_box_solid(m, *x - 1, *y, 1, h - MM3_PX(6))) out->wall_l = 1;
+    if (mm3_box_solid(m, *x + w, *y, 1, h - MM3_PX(6))) out->wall_r = 1;
 }

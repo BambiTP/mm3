@@ -87,7 +87,8 @@ typedef enum {
     MM3_ACT_POUND_FALL,
     MM3_ACT_POUND_LAND,
     MM3_ACT_CROUCH_SLIDE,
-    MM3_ACT_THROW
+    MM3_ACT_THROW,
+    MM3_ACT_ROLL
 } mm3_action;
 
 /* Pose for the renderer (derived deterministically every tick). */
@@ -153,6 +154,8 @@ typedef struct {
     int32_t run_timer;                  /* dash charge (modern) / run timer (retro) */
     int32_t pmeter;                     /* island P-meter 0..112               */
     int32_t throw_timer;                /* frames left in the throw pose        */
+    int32_t air_cap;                    /* speed limit in the air (air-lock rule) */
+    int32_t crouch_timer;               /* frames spent crouching still          */
     /* retro engine: exact 8-bit style state */
     int32_t r_xspeed, r_xmf;            /* signed px/16 byte, fraction         */
     int32_t r_yspeed, r_ymf, r_ydummy;  /* signed px byte, force, fraction     */

@@ -109,7 +109,7 @@ void mm3_player_throw(mm3_game_state *s, mm3_buttons b, mm3_fx vx, mm3_fx vy, mm
     o = &s->objs[pl->carry];
     pl->carry = -1;
     o->state = MM3_OBJS_THROWN;
-    if (b & MM3_BTN_UP) {
+    if ((b & MM3_BTN_UP) && up_vy > 0) {
         o->vx = pl->vx / 2;
         o->vy = -up_vy;
         o->x = pl->x + (pl->w - o->w) / 2;
@@ -128,6 +128,23 @@ void mm3_player_throw(mm3_game_state *s, mm3_buttons b, mm3_fx vx, mm3_fx vy, mm
         o->y = pl->y;
     }
     pl->throw_timer = 12;
+}
+
+/* Touching a resting crate sends it sliding away from the player. */
+void mm3_player_try_kick(mm3_game_state *s, mm3_fx vx)
+{
+    mm3_player *pl = &s->player;
+    int32_t i;
+    for (i = 0; i < MM3_MAX_OBJS; i++) {
+        mm3_object *o = &s->objs[i];
+        mm3_fx pc = pl->x + pl->w / 2, oc = o->x + o->w / 2;
+        if (o->type != MM3_OBJ_CRATE || o->state != MM3_OBJS_REST) continue;
+        if (!overlaps(pl->x, pl->y, pl->w, pl->h, o->x, o->y, o->w, o->h)) continue;
+        o->state = MM3_OBJS_THROWN;
+        o->vx = (oc >= pc ? 1 : -1) * vx;
+        o->vy = 0;
+        pl->throw_timer = 8;
+    }
 }
 
 void mm3_player_check_pit(mm3_game_state *s)
@@ -159,7 +176,9 @@ void mm3_player_update_pose(mm3_game_state *s, mm3_buttons b)
         sprint = pl->pmeter >= 0x70 && speed >= MM3_SUB16(0x2C);
     } else {
         run = speed > s->profile.walk_max + MM3_MILLI(100);
-        sprint = s->profile.dash_frames > 0 && pl->run_timer >= s->profile.dash_frames;
+        sprint = (s->profile.dash_frames > 0 && pl->run_timer >= s->profile.dash_frames) ||
+                 ((s->profile.moves & MM3_MOVE_PMETER) && s->profile.pmeter_frames > 0 &&
+                  pl->pmeter >= s->profile.pmeter_frames && speed > s->profile.run_max);
     }
 
     if (pl->throw_timer > 0) {
@@ -171,6 +190,7 @@ void mm3_player_update_pose(mm3_game_state *s, mm3_buttons b)
         pose = MM3_POSE_SWIM;
     } else if (pl->mode == MM3_MODE_GROUND) {
         if (pl->action == MM3_ACT_POUND_LAND) pose = MM3_POSE_CROUCH;
+        else if (pl->action == MM3_ACT_ROLL) pose = MM3_POSE_TRIPLE;
         else if (pl->action == MM3_ACT_CROUCH_SLIDE) pose = MM3_POSE_SLIDE;
         else if (pl->flags & MM3_PF_CROUCH) pose = MM3_POSE_CROUCH;
         else if (pl->flags & MM3_PF_SKIDDING) pose = MM3_POSE_SKID;

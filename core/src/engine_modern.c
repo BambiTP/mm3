@@ -57,6 +57,16 @@ static int32_t ground_jump(mm3_game_state *s, mm3_buttons b, int32_t dir, int32_
 
     if (mm3_box_solid(&s->map, pl->x, pl->y - MM3_PX(1), pl->w, pl->h)) return 0;
 
+    /* long jump on the action button while running (styles without a spin jump) */
+    if (spin && has(p, MM3_MOVE_LONG_JUMP) && !has(p, MM3_MOVE_SPIN_JUMP) && pl->carry < 0 &&
+        speed >= p->run_max * 3 / 4) {
+        mm3_player_set_crouch(pl, &s->map, 0);
+        pl->vx = mm3_sign(pl->vx) * p->long_jump_vx;
+        set_facing(pl, mm3_sign(pl->vx));
+        start_air(pl, MM3_ACT_LONG_JUMP, p->long_jump_vy);
+        return 1;
+    }
+    if (spin && !has(p, MM3_MOVE_SPIN_JUMP)) return 0;
     if (spin && has(p, MM3_MOVE_SPIN_JUMP) && pl->carry < 0) {
         start_air(pl, MM3_ACT_SPIN_JUMP, p->spin_jump_vel);
         return 1;
@@ -69,7 +79,8 @@ static int32_t ground_jump(mm3_game_state *s, mm3_buttons b, int32_t dir, int32_
             start_air(pl, MM3_ACT_LONG_JUMP, p->long_jump_vy);
             return 1;
         }
-        if (has(p, MM3_MOVE_BACKFLIP) && speed < p->walk_max / 2) {
+        if (has(p, MM3_MOVE_BACKFLIP) && speed < p->walk_max / 2 &&
+            pl->crouch_timer >= p->backflip_charge) {
             mm3_player_set_crouch(pl, &s->map, 0);
             pl->vx = -face * p->backflip_vx;
             start_air(pl, MM3_ACT_BACKFLIP, p->backflip_vy);
@@ -113,6 +124,10 @@ static void climb(mm3_game_state *s, mm3_buttons b, mm3_buttons pressed)
     mm3_fx oy = pl->y;
     mm3_fx dx = 0, dy = 0;
     mm3_hit hit;
+    if ((pressed & MM3_BTN_SPIN) && has(p, MM3_MOVE_SPIN_JUMP)) {
+        start_air(pl, MM3_ACT_SPIN_JUMP, p->spin_jump_vel);   /* spin off the vine */
+        return;
+    }
     if (pressed & MM3_BTN_JUMP) {
         start_air(pl, MM3_ACT_JUMP, p->jump_vel * 4 / 5);
         return;
@@ -162,12 +177,16 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
             !(pl->flags & MM3_PF_CROUCH))
             mm3_player_try_pickup(s);
         else if (pl->carry >= 0 && (released & MM3_BTN_RUN))
-            mm3_player_throw(s, b, p->throw_vx, p->throw_vy, p->throw_up_vy);
+            mm3_player_throw(s, b, p->throw_vx, p->throw_vy,
+                             has(p, MM3_MOVE_THROW_UP) ? p->throw_up_vy : 0);
     }
+    if (has(p, MM3_MOVE_KICK) && pl->carry < 0 && !(has(p, MM3_MOVE_CARRY) && run))
+        mm3_player_try_kick(s, p->throw_vx);
 
     /* ---- climbing ---- */
     if (has(p, MM3_MOVE_CLIMB) && pl->mode != MM3_MODE_CLIMB && (pl->flags & MM3_PF_ON_VINE) &&
-        (b & MM3_BTN_UP) && pl->carry < 0 && pl->action != MM3_ACT_POUND_FALL) {
+        (b & MM3_BTN_UP) && pl->carry < 0 && pl->action != MM3_ACT_POUND_FALL &&
+        (pl->mode == MM3_MODE_GROUND || pl->vy >= 0)) {
         pl->mode = MM3_MODE_CLIMB;
         pl->action = MM3_ACT_NONE;
         mm3_player_set_crouch(pl, m, 0);
@@ -181,6 +200,8 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
 
     /* ---- timers ---- */
     if (on_ground) {
+        /* air-lock rule: in the air you can't go faster than at takeoff */
+        pl->air_cap = mm3_max(mm3_abs(pl->vx), p->walk_max);
         pl->coyote = p->coyote_frames;
         if (pl->chain_timer > 0 && --pl->chain_timer == 0) pl->chain_count = 0;
     } else if (pl->coyote > 0) {
@@ -191,11 +212,30 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
         dir = 0;
     }
 
-    /* ---- crouch / crouch slide ---- */
-    if (on_ground) {
+    /* ---- P-meter: fills while running at full speed on the ground ---- */
+    if (has(p, MM3_MOVE_PMETER)) {
+        int32_t at_speed = run && dir != 0 && mm3_abs(pl->vx) >= p->run_max - MM3_MILLI(50);
+        if (on_ground) {
+            if (at_speed) { if (pl->pmeter < p->pmeter_frames) pl->pmeter++; }
+            else if (pl->pmeter > 0) pl->pmeter--;
+        } else if (pl->pmeter < p->pmeter_frames && pl->pmeter > 0) {
+            pl->pmeter--;                    /* drains in the air unless full */
+        }
+    }
+
+    /* ---- crouch / crouch slide / roll ---- */
+    if (pl->action == MM3_ACT_ROLL && --pl->action_timer <= 0) pl->action = MM3_ACT_NONE;
+    if (on_ground && pl->action != MM3_ACT_ROLL) {
         int32_t want = (b & MM3_BTN_DOWN) != 0 && pl->action != MM3_ACT_POUND_LAND;
         mm3_player_set_crouch(pl, m, want && pl->carry < 0);
-        if ((pl->flags & MM3_PF_CROUCH) && has(p, MM3_MOVE_CROUCH_SLIDE) &&
+        if ((pl->flags & MM3_PF_CROUCH) && mm3_abs(pl->vx) < p->walk_max / 2) pl->crouch_timer++;
+        else pl->crouch_timer = 0;
+        if ((pl->flags & MM3_PF_CROUCH) && has(p, MM3_MOVE_ROLL) && (pressed & MM3_BTN_SPIN)) {
+            pl->action = MM3_ACT_ROLL;
+            pl->action_timer = p->roll_frames;
+            pl->vx = facing_dir(pl) * p->roll_vx;
+            pressed = (mm3_buttons)(pressed & ~MM3_BTN_SPIN);
+        } else if ((pl->flags & MM3_PF_CROUCH) && has(p, MM3_MOVE_CROUCH_SLIDE) &&
             (mm3_abs(pl->vx) > p->walk_max / 2 || pl->slope != 0))
             pl->action = MM3_ACT_CROUCH_SLIDE;
         else if (pl->action == MM3_ACT_CROUCH_SLIDE)
@@ -232,16 +272,25 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
         }
         if (has(p, MM3_MOVE_DASH) && pl->run_timer >= p->dash_frames && p->dash_frames > 0)
             speed_cap = p->dash_max;
+        if (has(p, MM3_MOVE_PMETER) && run && pl->pmeter >= p->pmeter_frames && p->pmeter_frames > 0)
+            speed_cap = p->sprint_max;
 
         if (pl->action == MM3_ACT_POUND_WINDUP || pl->action == MM3_ACT_POUND_FALL) {
             pl->vx = 0;
         } else if (on_ground) {
-            if (pl->action == MM3_ACT_CROUCH_SLIDE) {
+            if (pl->action == MM3_ACT_ROLL) {
+                pl->vx = mm3_approach(pl->vx, 0, p->slide_friction);
+            } else if (pl->action == MM3_ACT_CROUCH_SLIDE) {
                 pl->vx = mm3_approach(pl->vx, 0, p->slide_friction);
                 if (pl->slope != 0) pl->vx += (pl->slope > 0 ? -1 : 1) * p->slope_accel * mm3_abs(pl->slope) / 2;
                 pl->vx = mm3_clamp(pl->vx, -p->run_max * 3 / 2, p->run_max * 3 / 2);
             } else if (pl->flags & MM3_PF_CROUCH) {
-                pl->vx = mm3_approach(pl->vx, 0, p->friction);
+                if (has(p, MM3_MOVE_CRAWL) && dir != 0) {
+                    pl->vx = mm3_approach(pl->vx, dir * p->crawl_speed, p->accel);
+                    set_facing(pl, dir);
+                } else {
+                    pl->vx = mm3_approach(pl->vx, 0, p->friction);
+                }
             } else if (dir == 0) {
                 pl->vx = mm3_approach(pl->vx, 0, p->friction);
             } else if (pl->vx != 0 && mm3_sign(pl->vx) == -dir) {
@@ -257,6 +306,7 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
             }
         } else if (dir != 0 && pl->action != MM3_ACT_LONG_JUMP) {
             int32_t air_cap = mm3_max(speed_cap, p->walk_max);
+            if (has(p, MM3_RULE_AIR_LOCK)) air_cap = mm3_min(air_cap, pl->air_cap);
             if (pl->vx != 0 && mm3_sign(pl->vx) == -dir)
                 pl->vx = mm3_approach(pl->vx, dir * air_cap, p->air_turn);
             else if (mm3_abs(pl->vx) < air_cap)
@@ -324,6 +374,8 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
                 if (--pl->action_timer <= 0) pl->action = MM3_ACT_NONE;
             } else if (pl->action == MM3_ACT_WALL_SLIDE) {
                 max_fall = p->wall_slide_max;
+            } else if (has(p, MM3_RULE_SLOWFALL) && held && pl->vy > 0) {
+                g = mm3_min(g, p->slowfall_gravity);   /* hold jump: fall slower */
             }
             pl->vy += g;
             if (pl->vy > max_fall) pl->vy = mm3_max(max_fall, pl->vy - g * 2);
@@ -337,7 +389,7 @@ void mm3_engine_modern_tick(mm3_game_state *s, mm3_buttons b)
     mm3_move_box(m, &pl->x, &pl->y, pl->w, pl->h, pl->vx, pl->vy, on_ground && pl->vy >= 0, &hit);
     mm3_player_apply_hit(pl, &hit);
 
-    if ((hit.wall_r && pl->vx > 0) || (hit.wall_l && pl->vx < 0)) pl->vx = 0;
+    if ((hit.blocked_r && pl->vx > 0) || (hit.blocked_l && pl->vx < 0)) pl->vx = 0;
     if (hit.head && pl->vy < 0) pl->vy = 0;
     if (hit.ground && pl->vy >= 0) {
         if (pl->mode != MM3_MODE_GROUND) {

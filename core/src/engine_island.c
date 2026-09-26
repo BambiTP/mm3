@@ -151,7 +151,7 @@ static void move_and_collide(mm3_game_state *s)
     mm3_move_box(&s->map, &pl->x, &pl->y, pl->w, pl->h, hi(pl->vx) * 256, hi(pl->vy) * 256,
                  was_ground, &hit);
     mm3_player_apply_hit(pl, &hit);
-    if ((hit.wall_r && pl->vx > 0) || (hit.wall_l && pl->vx < 0)) pl->vx = 0;
+    if ((hit.blocked_r && pl->vx > 0) || (hit.blocked_l && pl->vx < 0)) pl->vx = 0;
     if (hit.head && pl->vy < 0) pl->vy = 0;
     if (hit.ground && pl->vy >= 0) {
         if (pl->mode != MM3_MODE_GROUND) pl->i_spin = 0;
@@ -196,7 +196,7 @@ void mm3_engine_island_tick(mm3_game_state *s, mm3_buttons b)
 
     /* ---- climbing (vines): 8 units/frame, 16 holding RUN ---- */
     if (pl->mode != MM3_MODE_CLIMB && (pl->flags & MM3_PF_ON_VINE) && (b & MM3_BTN_UP) &&
-        pl->carry < 0) {
+        pl->carry < 0 && pl->vy >= 0) {
         pl->mode = MM3_MODE_CLIMB;
         pl->vx = pl->vy = 0;
         pl->i_spin = 0;
@@ -211,6 +211,7 @@ void mm3_engine_island_tick(mm3_game_state *s, mm3_buttons b)
             pl->mode = MM3_MODE_AIR;
             pl->i_in_air = IN_AIR_JUMP;
             pl->vy = -0x50 * 256;                    /* vine jump */
+            if (pressed & MM3_BTN_SPIN) pl->i_spin = 1;  /* spin off the vine */
         } else {
             if (b & MM3_BTN_LEFT) dx = -sp;
             if (b & MM3_BTN_RIGHT) dx = sp;

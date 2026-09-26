@@ -23,8 +23,6 @@ static const int32_t k_init_mforce[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x0
 /* Max speed and acceleration by physics row: 0 = run, 1 = walk, 2 = water. */
 static const int32_t k_max_right[3] = {0x28, 0x18, 0x10};
 static const int32_t k_friction[3] = {0xE4, 0x98, 0xD0};
-/* Vine side-step adders: [right pressed][facing right] -> pixels */
-static const int32_t k_climb_adder[4] = {14, 4, -4, -14};
 
 #define STATE_GROUND 0
 #define STATE_JUMP   1
@@ -169,9 +167,11 @@ void mm3_engine_retro_tick(mm3_game_state *s, mm3_buttons b)
     at_surface = in_water &&
         mm3_tile_at_point(m, pl->x + pl->w / 2, pl->y - MM3_PX(4)) != MM3_TILE_WATER;
 
-    /* Grab a vine when touching it in the air, or pressing up on the ground. */
-    if (st != STATE_CLIMB && (pl->flags & MM3_PF_ON_VINE) &&
-        (st != STATE_GROUND || (b & MM3_BTN_UP))) {
+    /* Grab a vine by holding UP (the original grabbed on touch; that felt
+       bad, so this follows the maker game). Not while still rising from a
+       jump off the vine. */
+    if (st != STATE_CLIMB && (pl->flags & MM3_PF_ON_VINE) && (b & MM3_BTN_UP) &&
+        (st == STATE_GROUND || pl->r_yspeed >= 0)) {
         st = STATE_CLIMB;
         pl->r_xspeed = 0; pl->r_xmf = 0;
         pl->r_yspeed = 0; pl->r_ymf = 0;
@@ -184,6 +184,11 @@ void mm3_engine_retro_tick(mm3_game_state *s, mm3_buttons b)
     /* Crouch flag only changes on the ground (kept during a crouch jump). */
     if (st == STATE_GROUND) mm3_player_set_crouch(pl, m, ud_down);
 
+    if (st == STATE_CLIMB && (pressed & MM3_BTN_JUMP)) {
+        /* MM3 addition: jump off the vine */
+        init_jump(pl, 0);
+        st = STATE_JUMP;
+    }
     if (st == STATE_CLIMB) {
         /* PlayerPhysicsSub, climbing branch */
         if (b & MM3_BTN_UP)        { pl->r_yspeed = -1; pl->r_ymf = 0x20; }
@@ -264,12 +269,10 @@ void mm3_engine_retro_tick(mm3_game_state *s, mm3_buttons b)
         carry = pl->r_ydummy >> 8;
         pl->r_ydummy &= 0xFF;
         dy = pl->r_yspeed + carry;
-        if (lr && pl->r_climb_timer == 0) {
-            int32_t idx = ((lr & 1) ? 0 : 2) + (facing == 1 ? 0 : 1);
-            pl->r_climb_timer = 0x18;
-            dx = k_climb_adder[idx];
-            facing = (lr ^ 3) == 2 ? 2 : 1;
-        }
+        /* MM3 change: slide smoothly along the vine instead of the
+           original's 24-frame side hops (k_climb_adder), which felt stiff. */
+        if (lr & 1) { dx = 1; facing = 1; }
+        else if (lr & 2) { dx = -1; facing = 2; }
     } else {
         pl->r_climb_timer = 0x18;
     }
@@ -292,7 +295,7 @@ void mm3_engine_retro_tick(mm3_game_state *s, mm3_buttons b)
             }
             if (hit.ground && dy > 0) { st = STATE_GROUND; }
         } else {
-            if ((hit.wall_r && pl->r_xspeed > 0) || (hit.wall_l && pl->r_xspeed < 0)) {
+            if ((hit.blocked_r && pl->r_xspeed > 0) || (hit.blocked_l && pl->r_xspeed < 0)) {
                 pl->r_xspeed = 0;
             }
             if (hit.head && pl->r_yspeed < 0) {

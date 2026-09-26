@@ -7,20 +7,23 @@ styles, a fully **deterministic** simulation, and a core designed to run on
 > "MM3" is a codename only. The shipping product will have its own original
 > name, characters, art and audio. See [docs/ART_AND_IP.md](docs/ART_AND_IP.md).
 
-**Status:** Milestone 2 in progress — six physics styles with their full
-move sets (two reproduced exactly from their source games), swimming,
-climbing, carrying, slopes, and procedural placeholder art per style.
+**Status:** Milestone 2 in progress — nine physics styles (level-maker
+versions plus two exact original engines), swimming, climbing, carrying,
+slopes, and procedural placeholder art per style.
 
 ## Physics styles
 
 | Key | Style | What it plays like |
 |---|---|---|
-| 1 | Retro | 8-bit rules, exact: heavy momentum, no mid-air turning, swim, vines |
-| 2 | Island | 16-bit rules, exact: P-meter sprint, spin jump, carry, look up |
-| 3 | Modern | HD 2D: triple jump, wall jump, ground pound, twirl |
-| 4 | Athletic | 3D-era moves in 2D: long jump, backflip, side flip, dash |
-| 5 | Bloom | Floaty and forgiving: spin, twirl, wall jump |
-| 6 | Custom | Every move from every style, tunable |
+| 1 | Retro | Level-maker 8-bit style: shared maker physics, kick crates, wall jump |
+| 2 | Arcade | Level-maker 8-bit sequel style: carry and kick |
+| 3 | Island | Level-maker 16-bit style: spin jump, toss up |
+| 4 | Modern | Level-maker HD style: triple jump, ground pound, twirl |
+| 5 | Athletic | Level-maker 3D-era style: long jump, backflip, roll, crawl, dash |
+| 6 | Bloom | Floaty and forgiving extra style |
+| 7 | Retro Classic | The original 8-bit engine, exact |
+| 8 | Island Classic | The original 16-bit engine, exact |
+| 9 | Custom | Every move, tunable |
 
 Details, sources and accuracy of every number: [docs/PHYSICS.md](docs/PHYSICS.md).
 
@@ -33,7 +36,7 @@ to get a link you can open in your browser
 
 Controls: arrows/WASD move · Z/Space jump · X/Shift run, pick up and throw ·
 C spin / twirl · Down crouch, slide, ground pound · Up vine, look up ·
-1–6 style · R restart. Gamepads work too (A jump, B spin, X/Y run).
+1–9 style · R restart. Gamepads work too (A jump, B spin, X/Y run).
 
 ## Building locally (optional)
 

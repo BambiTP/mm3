@@ -48,6 +48,13 @@ static const Style k_styles[N_STYLES] = {
       {140, 90, 43}, {176, 122, 60}, {88, 168, 56}, {44, 120, 24}, {216, 160, 96}, {150, 96, 40},
       {48, 80, 192}, {48, 160, 48}, {160, 96, 48}, {96, 48, 16},
       {107, 164, 248}, {107, 164, 248}, {60, 150, 60}, {40, 120, 40} },
+    /* ARCADE: 1x resolution, crisp outline, flat saturated colours, checkered ground */
+    { 1, 1, 0, 0, 0,
+      {252, 188, 148}, {48, 28, 16}, {240, 150, 30}, {50, 60, 72}, {30, 20, 20}, {40, 170, 230},
+      {10, 10, 10}, {16, 16, 16}, {255, 255, 255},
+      {228, 180, 110}, {196, 140, 80}, {100, 200, 90}, {40, 120, 40}, {220, 150, 90}, {140, 80, 40},
+      {60, 120, 230}, {40, 160, 60}, {200, 130, 70}, {110, 60, 30},
+      {160, 224, 248}, {200, 240, 255}, {90, 190, 110}, {60, 160, 90} },
     /* ISLAND: 1x resolution, dark outline, two-tone shading */
     { 1, 1, 1, 0, 0,
       {248, 200, 160}, {107, 58, 30}, {42, 179, 166}, {46, 58, 120}, {90, 46, 20}, {255, 140, 26},
@@ -76,6 +83,20 @@ static const Style k_styles[N_STYLES] = {
       {155, 110, 208}, {184, 146, 230}, {126, 224, 106}, {255, 111, 181}, {255, 214, 140}, {220, 150, 90},
       {60, 140, 240}, {70, 200, 110}, {230, 140, 80}, {140, 70, 40},
       {255, 199, 230}, {184, 224, 255}, {200, 150, 230}, {160, 120, 210} },
+    /* RETRO CLASSIC: Retro's treatment, dusk palette */
+    { 1, 0, 0, 0, 0,
+      {248, 184, 120}, {80, 48, 0}, {128, 88, 208}, {40, 24, 72}, {40, 24, 72}, {248, 200, 0},
+      {24, 16, 0}, {0, 0, 0}, {255, 255, 255},
+      {120, 72, 40}, {160, 104, 56}, {72, 144, 72}, {32, 96, 40}, {200, 144, 88}, {136, 80, 32},
+      {40, 64, 176}, {48, 144, 64}, {144, 88, 40}, {88, 40, 16},
+      {72, 96, 200}, {72, 96, 200}, {48, 112, 96}, {32, 88, 72} },
+    /* ISLAND CLASSIC: Island's treatment, sunset palette */
+    { 1, 1, 1, 0, 0,
+      {248, 200, 160}, {107, 58, 30}, {128, 88, 208}, {40, 40, 96}, {90, 46, 20}, {255, 200, 40},
+      {16, 16, 24}, {26, 16, 32}, {255, 255, 255},
+      {176, 96, 64}, {144, 72, 44}, {120, 192, 72}, {40, 88, 24}, {232, 176, 104}, {150, 96, 50},
+      {48, 96, 200}, {40, 150, 60}, {176, 112, 58}, {106, 62, 30},
+      {248, 168, 120}, {255, 224, 176}, {176, 120, 120}, {140, 96, 104} },
     /* CUSTOM: Modern treatment, magenta and gold, stone tiles */
     { 2, 1, 2, 0, 0,
       {255, 210, 176}, {40, 30, 40}, {224, 80, 154}, {58, 46, 106}, {30, 24, 40}, {245, 197, 24},
@@ -428,10 +449,19 @@ static float slope_h(int tt, float lx)
     }
 }
 
+/* Which tile pattern family a style uses. */
+static int look_of(int style)
+{
+    if (style == MM3_STYLE_RETRO_CLASSIC) return MM3_STYLE_RETRO;
+    if (style == MM3_STYLE_ISLAND_CLASSIC) return MM3_STYLE_ISLAND;
+    return style;
+}
+
 /* Ground material at local (lx, ly); depth = distance below the surface. */
 static Uint32 ground_px(const Style *st, int style, float lx, float ly, float depth, int ix, int iy)
 {
-    float gd = style == MM3_STYLE_RETRO ? 3.0f : 4.0f;
+    style = look_of(style);
+    float gd = (style == MM3_STYLE_RETRO || style == MM3_STYLE_ARCADE) ? 3.0f : 4.0f;
     if (depth < gd) {
         if (style == MM3_STYLE_ISLAND && depth > gd - 1.0f) return argb(st->grass2, 1.0f, 255);
         if (style == MM3_STYLE_MODERN && depth < 1.0f) return argb(st->grass2, 1.0f, 255);
@@ -442,6 +472,12 @@ static Uint32 ground_px(const Style *st, int style, float lx, float ly, float de
     switch (style) {
     case MM3_STYLE_RETRO:
         return ((ix * 7 + iy * 3) % 11 == 0) ? argb(st->ground2, 1.0f, 255) : argb(st->ground, 1.0f, 255);
+    case MM3_STYLE_ARCADE: {
+        int check = (((int)(lx / 8.0f)) + ((int)(ly / 8.0f))) & 1;
+        int edge = ((int)lx % 8 == 7) || ((int)ly % 8 == 7);
+        if (edge) return argb(st->ground2, 0.8f, 255);
+        return argb(check ? st->ground2 : st->ground, 1.0f, 255);
+    }
     case MM3_STYLE_ISLAND: {
         float cx = (float)((int)(lx / 8.0f)) * 8.0f + 4.0f + (((int)(ly / 8.0f)) % 2) * 2.0f;
         float cy = (float)((int)(ly / 8.0f)) * 8.0f + 4.0f;
@@ -562,7 +598,7 @@ static SDL_Texture *render_background(SDL_Renderer *r, const Style *st, int styl
             sky.r = (Uint8)(st->sky_top.r + (st->sky_bottom.r - st->sky_top.r) * k);
             sky.g = (Uint8)(st->sky_top.g + (st->sky_bottom.g - st->sky_top.g) * k);
             sky.b = (Uint8)(st->sky_top.b + (st->sky_bottom.b - st->sky_top.b) * k);
-            if (style == MM3_STYLE_RETRO) sky = st->sky_top;
+            if (look_of(style) == MM3_STYLE_RETRO) sky = st->sky_top;
             if (y > near_h) cv.px[y * BG_W + x] = argb(st->hill_near, 1.0f, 255);
             else if (y > far_h) cv.px[y * BG_W + x] = argb(st->hill_far, 1.0f, 255);
             else cv.px[y * BG_W + x] = argb(sky, 1.0f, 255);

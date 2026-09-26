@@ -3,7 +3,7 @@
  * and later Android/iOS). Art is procedural placeholder (see art.c).
  *
  * Keyboard: Arrows/WASD move, Z/Space/K jump, X/Shift/J run & carry,
- *           C/L spin, 1-6 physics style, R restart, Esc quit.
+ *           C/L spin, 1-9 physics style, R restart, Esc quit.
  * Gamepad:  D-pad/stick move, A jump, B spin, X/Y run & carry.
  */
 #include <stdio.h>
@@ -33,11 +33,14 @@ typedef struct {
 static app_t g_app;
 
 static const char *const k_hints[MM3_STYLE_COUNT] = {
-    "Z JUMP  X RUN  DOWN CROUCH  UP VINE  (NO AIR TURN)",
-    "Z JUMP  C SPIN  X RUN/CARRY  DOWN DUCK  UP LOOK/VINE",
+    "Z JUMP  X RUN  WALL JUMP  DOWN SLIDE  UP VINE  TOUCH CRATE: KICK",
+    "Z JUMP  X RUN / HOLD CRATE  WALL JUMP  DOWN SLIDE  UP VINE",
+    "Z JUMP  C SPIN  X HOLD CRATE (UP+RELEASE: TOSS UP)  WALL JUMP",
     "Z JUMP X3  C SPIN/TWIRL  DOWN POUND  WALL JUMP  X CARRY",
-    "RUN+DOWN+Z LONG  DOWN+Z BACKFLIP  TURN+Z SIDEFLIP",
+    "X+C LONG JUMP  HOLD DOWN 1S+Z BACKFLIP  DOWN+C ROLL  POUND",
     "Z JUMP  C SPIN/TWIRL  DOWN POUND  WALL JUMP  X CARRY",
+    "ORIGINAL 8-BIT ENGINE  Z JUMP  X RUN  NO AIR TURN",
+    "ORIGINAL 16-BIT ENGINE  Z JUMP  C SPIN  X RUN/CARRY",
     "EVERY MOVE FROM EVERY STYLE"
 };
 
@@ -111,28 +114,27 @@ static void draw_hud(app_t *a)
     bar.x = 0; bar.y = 0; bar.w = VIEW_W; bar.h = 22;
     SDL_SetRenderDrawColor(r, 0, 0, 0, 120);
     SDL_RenderFillRect(r, &bar);
-    for (i = 0; i < MM3_STYLE_COUNT; i++) {
-        char label[32];
-        int active = i == s->style, w;
-        snprintf(label, sizeof(label), "%d %s", i + 1, mm3_style_name((mm3_style)i));
+    {
+        char label[48];
+        int w;
+        SDL_Rect hl;
+        snprintf(label, sizeof(label), "%d %s", s->style + 1, mm3_style_name((mm3_style)s->style));
         w = art_text_width(label);
-        if (active) {
-            SDL_Rect hl;
-            hl.x = x - 2; hl.y = 2; hl.w = w + 3; hl.h = 10;
-            SDL_SetRenderDrawColor(r, 255, 255, 255, 230);
-            SDL_RenderFillRect(r, &hl);
-            art_text(r, label, x, 3, 20, 20, 30);
-        } else {
-            art_text(r, label, x, 3, 220, 220, 230);
-        }
-        x += w + 8;
+        hl.x = x - 2; hl.y = 2; hl.w = w + 3; hl.h = 10;
+        SDL_SetRenderDrawColor(r, 255, 255, 255, 230);
+        SDL_RenderFillRect(r, &hl);
+        art_text(r, label, x, 3, 20, 20, 30);
+        art_text(r, "PRESS 1-9 TO CHANGE STYLE  R RESTART", x + w + 10, 3, 200, 200, 215);
     }
     art_text(r, k_hints[s->style], 6, 13, 255, 240, 170);
 
     /* P-meter (Island) or dash meter (styles with a dash) */
-    if (s->style == MM3_STYLE_ISLAND || (s->profile.moves & MM3_MOVE_DASH)) {
+    if (s->style == MM3_STYLE_ISLAND_CLASSIC ||
+        ((s->profile.moves & (MM3_MOVE_DASH | MM3_MOVE_PMETER)) && s->style != MM3_STYLE_RETRO_CLASSIC)) {
         int filled, total = 6;
-        if (s->style == MM3_STYLE_ISLAND) filled = s->player.pmeter * total / 0x70;
+        int pm = s->style == MM3_STYLE_ISLAND_CLASSIC || (s->profile.moves & MM3_MOVE_PMETER);
+        if (s->style == MM3_STYLE_ISLAND_CLASSIC) filled = s->player.pmeter * total / 0x70;
+        else if (pm) filled = s->profile.pmeter_frames ? s->player.pmeter * total / s->profile.pmeter_frames : 0;
         else filled = s->profile.dash_frames ? s->player.run_timer * total / s->profile.dash_frames : 0;
         for (i = 0; i < total; i++) {
             SDL_Rect seg;
@@ -141,7 +143,7 @@ static void draw_hud(app_t *a)
             else SDL_SetRenderDrawColor(r, 60, 60, 70, 200);
             SDL_RenderFillRect(r, &seg);
         }
-        art_text(r, s->style == MM3_STYLE_ISLAND ? "P" : "DASH", 6 + total * 7 + 2, VIEW_H - 13,
+        art_text(r, pm ? "P" : "DASH", 6 + total * 7 + 2, VIEW_H - 13,
                  filled >= total ? 255 : 150, filled >= total ? 220 : 150, filled >= total ? 60 : 160);
     }
 }

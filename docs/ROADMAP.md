@@ -17,6 +17,9 @@
 - ✅ Water, vines, crates (carry/throw/kick), one-way platforms, slopes.
 - ✅ Procedural placeholder sprites and tiles, different for each style.
 - ✅ Gamepad support.
+- ✅ Level-maker versions of each style (shared maker physics, per-style
+  move sets), new Arcade style, Classic styles kept as bonus options.
+- ✅ Fixed: stopping at slope seams; vines now need ↑ to grab.
 - Playtest and retune the estimated styles (Athletic, Bloom).
 - Render interpolation, camera smoothing, basic sound effects.
 - Replay recorder/player + replay-based regression tests.

@@ -1,17 +1,78 @@
 # Physics styles
 
-Six styles. Two of them run a dedicated engine that reproduces the source
-game's movement algorithm step by step; the other four share one
-data-driven engine.
+Nine styles. The first five follow the **level-maker versions** of their
+source games (Super Mario Maker 2), where the four 2D styles share one physics
+engine and differ only in moves and rules. Two **Classic** styles keep the
+exact original-game engines as bonus options.
 
-| Key | Public name | Source game (internal only) | Engine | Accuracy |
+| Key | Public name | Source (internal only) | Engine | Accuracy |
 |---|---|---|---|---|
-| 1 | **Retro** | Super Mario Bros. (NES) | `engine_retro.c` | **Exact** movement algorithm and constants |
-| 2 | **Island** | Super Mario World (SNES) | `engine_island.c` | **Exact** movement algorithm and constants |
-| 3 | **Modern** | New Super Mario Bros. Wii | `engine_modern.c` | Jump, gravity, max fall **exact**; walk/run speeds **estimated** |
-| 4 | **Athletic** | Super Mario 3D World (2D plane) | `engine_modern.c` | **Estimated** (no public data) |
-| 5 | **Bloom** | Super Mario Bros. Wonder | `engine_modern.c` | **Estimated** (no public data) |
-| 6 | **Custom** | — | `engine_modern.c` | Modern's numbers with every move enabled |
+| 1 | **Retro** | SMM2 SMB1 style | `engine_modern.c`, shared maker profile | maker rules documented; numbers partly exact |
+| 2 | **Arcade** | SMM2 SMB3 style | same shared maker profile | same |
+| 3 | **Island** | SMM2 SMW style | same shared maker profile | same |
+| 4 | **Modern** | SMM2 NSMBU style | same shared maker profile | same |
+| 5 | **Athletic** | SMM2 3D World style | `engine_modern.c`, own profile | **Estimated** |
+| 6 | **Bloom** | Super Mario Bros. Wonder (extra) | `engine_modern.c`, own profile | **Estimated** |
+| 7 | **Retro Classic** | original Super Mario Bros. (NES) | `engine_retro.c` | **Exact** |
+| 8 | **Island Classic** | original Super Mario World (SNES) | `engine_island.c` | **Exact** |
+| 9 | **Custom** | — | `engine_modern.c` | maker numbers, every move enabled |
+
+## Maker styles (1-4)
+
+In the maker game, the SMB1, SMB3, SMW and NSMBU styles all use the same
+NSMBU-derived physics; only the move set changes per style. MM3 does the same:
+Retro, Arcade, Island and Modern share one profile (`MAKER_2D` in
+`physics_profiles.c`).
+
+Shared numbers:
+
+| Value | Number | Confidence |
+|---|---|---|
+| Jump launch, speed bonus, gravity bands, max fall | as NSMB Wii (below) | Exact (from the NSMBW decomp; SMM2 is NSMBU-based) |
+| Walk / run / P-speed | 1.5 / 2.5 / 3.0 px/f | Estimated |
+| Ground / air acceleration | 0.06 / 0.035 px/f² | Estimated |
+| P-meter | 56 frames at run speed to fill | Estimated |
+| Slowfall gravity (jump held while falling) | 0.25 px/f² | Estimated |
+
+Shared rules, from fan documentation of the maker game (Kaizo Mario Maker
+wiki, "Mario Maker 2 momentum physics"):
+
+- **Speed locks in the air**: you can't go faster in the air than at takeoff
+  (you can still brake and turn).
+- **P-meter** fills only on the ground while running at top speed; it drains
+  in the air unless already full. Full meter = P-speed.
+- Releasing run on the ground slows you back to walking speed.
+- Air acceleration is lower than on the ground.
+- **Slowfall**: holding jump while falling accelerates downward more slowly.
+
+Moves per maker style:
+
+| Move | Retro | Arcade | Island | Modern |
+|---|---|---|---|---|
+| Walk, run, P-speed, variable jump, slowfall | ✓ | ✓ | ✓ | ✓ |
+| Wall slide + wall jump | ✓ | ✓ | ✓ | ✓ |
+| Crouch, crouch jump, slide down slopes | ✓ | ✓ | ✓ | ✓ |
+| Swim, climb vines (hold ↑) | ✓ | ✓ | ✓ | ✓ |
+| Kick a crate by touching it | ✓ | ✓ | ✓ | ✓ |
+| Carry and throw (hold run) | – | ✓ | ✓ | ✓ |
+| Toss up (↑ while releasing run) | – | – | ✓ | – |
+| Spin jump (also off vines) | – | – | ✓ | ✓ |
+| Mid-air twirl, ground pound, triple jump | – | – | – | ✓ |
+
+**Arcade (SMB3 style):** in the maker game SMB3 style moves exactly like the
+others; its differences are the move set (carry and kick) and items that
+aren't in MM3 yet (power-ups). The original SMB3's own numbers, for a possible
+future "Arcade Classic": walk speed `0x18`, run `0x28`, P-speed `0x38`
+(1/16 px per frame), from Data Crystal's SMB3 notes; the full disassembly is
+[captainsouthbird/smb3](https://github.com/captainsouthbird/smb3).
+
+## Athletic (maker 3D World style, 5)
+
+Its own engine in the maker game, with the biggest move set: dash (after
+about 1.5 s of running), **long jump** (run, then run + action button, or
+run + ↓ + jump), **backflip** (crouch about 1 s, then jump), **crawl**, **roll**
+(action button while crouched), ground pound, slide, carry, wall jump. All
+numbers Estimated.
 
 Confidence labels used below:
 
@@ -57,7 +118,7 @@ per second. That unit stores all the source values without rounding:
 - **3D World, Wonder:** no decompilation or datamine is public. Move sets come
   from the games' manuals and wikis; numbers are estimates.
 
-## 1 · Retro (8-bit)
+## 7 · Retro Classic (original 8-bit engine)
 
 Movement is a line-by-line port of the original's player routine:
 
@@ -80,14 +141,15 @@ Movement is a line-by-line port of the original's player routine:
 - **Swim:** strokes use tier 5 (`−2` px/f, gravity `0x0D`, fall `0x0A`).
   Near the surface gravity becomes `0x18`. *MM3 addition:* jumping at the
   surface leaves the water (the original's water levels had no surface).
-- **Vines:** up −7/8 px/f, down ≈2 px/f; left/right hops 14 or 4 px around
-  the vine every 24 frames. You can't jump off a vine (original behavior);
-  step off to the side or climb down.
+- **Vines:** up −7/8 px/f, down ≈2 px/f (exact). Changed from the original
+  because it felt bad: you grab a vine by holding ↑ instead of on touch, you
+  slide sideways smoothly instead of the original's 24-frame side hops, and
+  you can jump off.
 
 Verified: walk top speed `0x18`, run `0x28`, standing full jump ≈4 tiles,
 running full jump ≈5 tiles, no air turning.
 
-## 2 · Island (16-bit)
+## 8 · Island Classic (original 16-bit engine)
 
 - Frame order matches the original: move with last frame's speed and collide,
   **then** read input and compute new speeds.
@@ -128,7 +190,7 @@ Verified against measurements of the original (project owner's data):
 | Sprint spin jump length | 11 | 10.8 |
 | Walking jump length | 5 (barely) | 4.5 |
 
-## 3-6 · Modern engine
+## Modern engine details
 
 One engine, driven by `mm3_modern_profile` (see `physics_profiles.c`).
 Gravity uses the HD-era scheme from the NSMBW decomp: the acceleration depends
@@ -139,7 +201,7 @@ on the current vertical-speed band and whether jump is held.
 | Jump held | 0.06 | 0.25 | 0.34 | **0.08** (floaty apex) | 0.31 | 0.34 |
 | Released | 0.34 | 0.34 | 0.34 | 0.25 | 0.34 | 0.34 |
 
-### Modern (NSMB Wii) — Exact where marked
+### NSMB Wii source values (used by the maker profile)
 
 | Value | Number | Confidence |
 |---|---|---|
@@ -159,13 +221,6 @@ Moves: walk/run, **double & triple jump** (chain within 10 frames of landing),
 slide + wall jump**, **ground pound** (↓ in air: windup, fall, landing lag),
 crouch, crouch jump, **crouch slide**, swim, climb, carry/throw.
 
-### Athletic (3D World, 2D plane) — Estimated
-
-Moves: run with **dash** (hold run at top speed for 1 s to reach dash speed),
-**long jump** (run + ↓ + jump), **backflip** (still + ↓ + jump), **side flip**
-(jump while skidding), wall jump, ground pound, crouch slide, swim, climb,
-carry. No triple jump.
-
 ### Bloom (Wonder) — Estimated
 
 Lower top speed, strong friction (stops quickly), floatier jump, slower max
@@ -181,22 +236,27 @@ will be editable in the level editor and saved in the level.
 
 ## Move matrix
 
-| Move | Retro | Island | Modern | Athletic | Bloom | Custom |
-|---|---|---|---|---|---|---|
-| Walk / run / skid / variable jump | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Crouch, crouch jump | ✓ | ✓ | ✓ | crouch (backflip) | ✓ | ✓ |
-| Look up | – | ✓ | – | – | – | – |
-| Sprint / dash | – | P-meter | – | dash | – | dash |
-| Spin jump | – | ✓ | ✓ | – | ✓ | ✓ |
-| Mid-air twirl | – | – | ✓ | – | ✓ | ✓ |
-| Wall slide + wall jump | – | – | ✓ | ✓ | ✓ | ✓ |
-| Ground pound | – | – | ✓ | ✓ | ✓ | ✓ |
-| Double / triple jump | – | – | ✓ | – | – | ✓ |
-| Long jump, backflip, side flip | – | – | – | ✓ | – | ✓ |
-| Crouch slide | – | slopes | ✓ | ✓ | ✓ | ✓ |
-| Swim | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Climb vines | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Carry / throw / kick | – | ✓ (+toss up) | ✓ | ✓ | ✓ | ✓ |
+R = Retro, Ar = Arcade, I = Island, M = Modern, At = Athletic, B = Bloom,
+RC = Retro Classic, IC = Island Classic, C = Custom.
+
+| Move | R | Ar | I | M | At | B | RC | IC | C |
+|---|---|---|---|---|---|---|---|---|---|
+| Walk / run / skid / variable jump | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| P-speed / dash | P | P | P | P | dash | – | – | P | both |
+| Air speed lock, slowfall | ✓ | ✓ | ✓ | ✓ | – | – | lock (orig.) | – | slowfall |
+| Wall slide + wall jump | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | – | ✓ |
+| Crouch, crouch jump | ✓ | ✓ | ✓ | ✓ | crouch | ✓ | ✓ | ✓ | ✓ |
+| Slide down slopes | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ |
+| Kick crate on touch | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | – | – | ✓ |
+| Carry / throw | – | ✓ | ✓ | ✓ | ✓ | ✓ | – | ✓ | ✓ |
+| Toss up | – | – | ✓ | – | – | – | – | ✓ | ✓ |
+| Spin jump | – | – | ✓ | ✓ | – | ✓ | – | ✓ | ✓ |
+| Twirl, ground pound | – | – | – | ✓ | pound | ✓ | – | – | ✓ |
+| Triple jump | – | – | – | ✓ | – | – | – | – | ✓ |
+| Long jump, backflip, crawl, roll | – | – | – | – | ✓ | – | – | – | ✓ |
+| Side flip | – | – | – | – | – | – | – | – | ✓ |
+| Swim, climb vines (hold ↑) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Look up | – | – | – | – | – | – | – | ✓ | – |
 
 Not yet included: power-up forms and their moves (e.g. flight), enemies and
 stomping, spin-bouncing off enemies, Yoshi-style mounts, and the Wonder
